@@ -15,9 +15,10 @@ const gameStats = {
 };
 
 const crosshairConfig = {
-    size: 20,
-    color: '#00ff00',
-    thickness: 2
+    size: 5,
+    color: '#ffffff',
+    thickness: 2,
+    gap: 3
 };
 
 const scene = new THREE.Scene();
@@ -67,52 +68,83 @@ function updateCrosshair() {
                 position: absolute;
                 background-color: ${crosshairConfig.color};
             }
-            .crosshair-h {
+            .crosshair-h-left {
                 width: ${crosshairConfig.size}px;
                 height: ${crosshairConfig.thickness}px;
                 top: 50%;
-                left: -${halfSize}px;
+                right: ${crosshairConfig.gap}px;
                 transform: translateY(-50%);
             }
-            .crosshair-v {
+            .crosshair-h-right {
+                width: ${crosshairConfig.size}px;
+                height: ${crosshairConfig.thickness}px;
+                top: 50%;
+                left: ${crosshairConfig.gap}px;
+                transform: translateY(-50%);
+            }
+            .crosshair-v-top {
                 width: ${crosshairConfig.thickness}px;
                 height: ${crosshairConfig.size}px;
                 left: 50%;
-                top: -${halfSize}px;
+                bottom: ${crosshairConfig.gap}px;
+                transform: translateX(-50%);
+            }
+            .crosshair-v-bottom {
+                width: ${crosshairConfig.thickness}px;
+                height: ${crosshairConfig.size}px;
+                left: 50%;
+                top: ${crosshairConfig.gap}px;
                 transform: translateX(-50%);
             }
         </style>
-        <div class="crosshair-h"></div>
-        <div class="crosshair-v"></div>
+        <div class="crosshair-h crosshair-h-left"></div>
+        <div class="crosshair-h crosshair-h-right"></div>
+        <div class="crosshair-v crosshair-v-top"></div>
+        <div class="crosshair-v crosshair-v-bottom"></div>
     `;
 }
 
 function updateCrosshairPreview() {
     const preview = document.getElementById('crosshairPreview');
-    const halfSize = crosshairConfig.size / 2;
     preview.innerHTML = `
         <style>
             .crosshair-h, .crosshair-v {
                 position: absolute;
                 background-color: ${crosshairConfig.color};
             }
-            .crosshair-h {
+            .crosshair-h-left {
                 width: ${crosshairConfig.size}px;
                 height: ${crosshairConfig.thickness}px;
                 top: 50%;
-                left: -${halfSize}px;
+                right: ${crosshairConfig.gap}px;
                 transform: translateY(-50%);
             }
-            .crosshair-v {
+            .crosshair-h-right {
+                width: ${crosshairConfig.size}px;
+                height: ${crosshairConfig.thickness}px;
+                top: 50%;
+                left: ${crosshairConfig.gap}px;
+                transform: translateY(-50%);
+            }
+            .crosshair-v-top {
                 width: ${crosshairConfig.thickness}px;
                 height: ${crosshairConfig.size}px;
                 left: 50%;
-                top: -${halfSize}px;
+                bottom: ${crosshairConfig.gap}px;
+                transform: translateX(-50%);
+            }
+            .crosshair-v-bottom {
+                width: ${crosshairConfig.thickness}px;
+                height: ${crosshairConfig.size}px;
+                left: 50%;
+                top: ${crosshairConfig.gap}px;
                 transform: translateX(-50%);
             }
         </style>
-        <div class="crosshair-h"></div>
-        <div class="crosshair-v"></div>
+        <div class="crosshair-h crosshair-h-left"></div>
+        <div class="crosshair-h crosshair-h-right"></div>
+        <div class="crosshair-v crosshair-v-top"></div>
+        <div class="crosshair-v crosshair-v-bottom"></div>
     `;
 }
 
@@ -313,45 +345,89 @@ function setupPointerLock() {
 }
 
 function setupOptionsMenu() {
-    const sizeSlider = document.getElementById('sizeSlider');
-    const thicknessSlider = document.getElementById('thicknessSlider');
+    const sliders = {
+        size: document.getElementById('sizeSlider'),
+        thickness: document.getElementById('thicknessSlider'),
+        gap: document.getElementById('gapSlider')
+    };
+    
+    const inputs = {
+        size: document.getElementById('sizeInput'),
+        thickness: document.getElementById('thicknessInput'),
+        gap: document.getElementById('gapInput')
+    };
+    
     const colorPicker = document.getElementById('colorPicker');
-    const sizeValue = document.getElementById('sizeValue');
-    const thicknessValue = document.getElementById('thicknessValue');
 
-    sizeSlider.value = crosshairConfig.size;
-    thicknessSlider.value = crosshairConfig.thickness;
+    // Fonction pour mettre à jour une valeur avec limites
+    function updateValue(key, value, isNumber = true) {
+        const min = sliders[key].min;
+        const max = sliders[key].max;
+        const step = sliders[key].step || 1;
+        
+        // Conversion et limitation de la valeur
+        let newValue = isNumber ? parseFloat(value) : value;
+        newValue = Math.min(Math.max(newValue, parseFloat(min)), parseFloat(max));
+        
+        // Arrondir au step le plus proche si nécessaire
+        if (step !== 1) {
+            newValue = Math.round(newValue / step) * step;
+        }
+        
+        // Mise à jour des éléments UI
+        sliders[key].value = newValue;
+        inputs[key].value = newValue;
+        
+        // Mise à jour de la config
+        crosshairConfig[key] = newValue;
+        
+        // Mise à jour du crosshair
+        updateCrosshairPreview();
+        updateCrosshair();
+    }
+
+    // Configuration des événements pour chaque paire slider/input
+    Object.keys(sliders).forEach(key => {
+        // Événement slider
+        sliders[key].addEventListener('input', (e) => {
+            updateValue(key, e.target.value);
+        });
+
+        // Événement input number
+        inputs[key].addEventListener('input', (e) => {
+            updateValue(key, e.target.value);
+        });
+
+        // Événement pour gérer quand l'utilisateur quitte l'input
+        inputs[key].addEventListener('blur', (e) => {
+            updateValue(key, e.target.value);
+        });
+
+        // Événement pour gérer la touche Enter
+        inputs[key].addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                updateValue(key, e.target.value);
+                e.target.blur();
+            }
+        });
+    });
+
+    // Gestion de la couleur
+    colorPicker.addEventListener('input', (e) => {
+        crosshairConfig.color = e.target.value;
+        updateCrosshairPreview();
+        updateCrosshair();
+    });
+
+    // Initialisation des valeurs
+    Object.keys(sliders).forEach(key => {
+        updateValue(key, crosshairConfig[key]);
+    });
     colorPicker.value = crosshairConfig.color;
-    sizeValue.textContent = crosshairConfig.size;
-    thicknessValue.textContent = crosshairConfig.thickness;
 
-    sizeSlider.addEventListener('input', () => {
-        crosshairConfig.size = parseInt(sizeSlider.value);
-        sizeValue.textContent = sizeSlider.value;
-        updateCrosshairPreview();
-        updateCrosshair();
-    });
-
-    thicknessSlider.addEventListener('input', () => {
-        crosshairConfig.thickness = parseFloat(thicknessSlider.value);
-        thicknessValue.textContent = thicknessSlider.value;
-        updateCrosshairPreview();
-        updateCrosshair();
-    });
-
-    colorPicker.addEventListener('input', () => {
-        crosshairConfig.color = colorPicker.value;
-        updateCrosshairPreview();
-        updateCrosshair();
-    });
-
-    document.getElementById('saveOptionsButton').addEventListener('click', () => {
-        toggleOptionsMenu();
-    });
-
-    document.getElementById('backOptionsButton').addEventListener('click', () => {
-        toggleOptionsMenu();
-    });
+    // Boutons
+    document.getElementById('saveOptionsButton').addEventListener('click', toggleOptionsMenu);
+    document.getElementById('backOptionsButton').addEventListener('click', toggleOptionsMenu);
 }
 
 function setupEventListeners() {

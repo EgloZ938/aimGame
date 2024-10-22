@@ -217,18 +217,6 @@ canvas {
     border-radius: 5px;
 }
 
-.option-row {
-    display: flex;
-    align-items: center;
-    margin: 15px 0;
-    color: white;
-}
-
-.option-row label {
-    width: 80px;
-    text-align: left;
-}
-
 .option-row input[type="range"] {
     flex: 1;
     margin: 0 15px;
@@ -259,4 +247,36 @@ canvas {
 .option-row span {
     width: 30px;
     text-align: right;
+}
+
+.number-input {
+    width: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 5px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.number-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    color: white;
+}
+
+.option-row label {
+    width: 100px;
+}
+
+.option-row input[type="range"] {
+    flex: 1;
 }

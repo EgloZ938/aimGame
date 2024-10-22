@@ -56,13 +56,18 @@
                 <div class="options-controls">
                     <div class="option-row">
                         <label>Taille</label>
-                        <input type="range" id="sizeSlider" min="10" max="50" value="20" step="1">
-                        <span id="sizeValue">20</span>
+                        <input type="range" id="sizeSlider" min="0" max="20" value="5">
+                        <input type="number" id="sizeInput" min="0" max="20" value="5" class="number-input">
                     </div>
                     <div class="option-row">
                         <label>Épaisseur</label>
                         <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
-                        <span id="thicknessValue">2</span>
+                        <input type="number" id="thicknessInput" min="1" max="5" value="2" step="0.5" class="number-input">
+                    </div>
+                    <div class="option-row">
+                        <label>Espacement</label>
+                        <input type="range" id="gapSlider" min="0" max="10" value="2">
+                        <input type="number" id="gapInput" min="0" max="10" value="2" class="number-input">
                     </div>
                     <div class="option-row">
                         <label>Couleur</label>
