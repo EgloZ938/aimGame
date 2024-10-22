@@ -46,6 +46,37 @@
         </div>
     </div>
 
+    <div id="optionsMenu" class="pause-menu hidden">
+        <div class="pause-content options-content">
+            <h2>OPTIONS</h2>
+            <div class="crosshair-section">
+                <div class="preview-box">
+                    <div id="crosshairPreview"></div>
+                </div>
+                <div class="options-controls">
+                    <div class="option-row">
+                        <label>Taille</label>
+                        <input type="range" id="sizeSlider" min="10" max="50" value="20" step="1">
+                        <span id="sizeValue">20</span>
+                    </div>
+                    <div class="option-row">
+                        <label>Épaisseur</label>
+                        <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
+                        <span id="thicknessValue">2</span>
+                    </div>
+                    <div class="option-row">
+                        <label>Couleur</label>
+                        <input type="color" id="colorPicker" value="#00ff00">
+                    </div>
+                </div>
+            </div>
+            <div class="menu-buttons">
+                <button id="saveOptionsButton" class="menu-button">SAUVEGARDER</button>
+                <button id="backOptionsButton" class="menu-button">RETOUR</button>
+            </div>
+        </div>
+    </div>
+
     <script type="importmap">
         {
             "imports": {

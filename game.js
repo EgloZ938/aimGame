@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as dat from 'https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.module.js';
 
 const gameStats = {
     hits: 0,
@@ -13,6 +12,12 @@ const gameStats = {
     maxMultiplier: 5,
     streakThreshold: 5,
     missPenalty: 50
+};
+
+const crosshairConfig = {
+    size: 20,
+    color: '#00ff00',
+    thickness: 2
 };
 
 const scene = new THREE.Scene();
@@ -47,19 +52,6 @@ const mouseSensitivity = 0.002;
 let rotationX = 0;
 let rotationY = 0;
 
-const crosshairConfig = {
-    size: 20,
-    color: '#00ff00',
-    thickness: 2
-};
-
-const gui = new dat.GUI();
-const crosshairFolder = gui.addFolder('Crosshair');
-crosshairFolder.add(crosshairConfig, 'size', 10, 50);
-crosshairFolder.add(crosshairConfig, 'thickness', 1, 5);
-crosshairFolder.addColor(crosshairConfig, 'color');
-gui.close();
-
 const crosshair = document.createElement('div');
 crosshair.style.position = 'fixed';
 crosshair.style.top = '50%';
@@ -70,6 +62,35 @@ document.body.appendChild(crosshair);
 function updateCrosshair() {
     const halfSize = crosshairConfig.size / 2;
     crosshair.innerHTML = `
+        <style>
+            .crosshair-h, .crosshair-v {
+                position: absolute;
+                background-color: ${crosshairConfig.color};
+            }
+            .crosshair-h {
+                width: ${crosshairConfig.size}px;
+                height: ${crosshairConfig.thickness}px;
+                top: 50%;
+                left: -${halfSize}px;
+                transform: translateY(-50%);
+            }
+            .crosshair-v {
+                width: ${crosshairConfig.thickness}px;
+                height: ${crosshairConfig.size}px;
+                left: 50%;
+                top: -${halfSize}px;
+                transform: translateX(-50%);
+            }
+        </style>
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+    `;
+}
+
+function updateCrosshairPreview() {
+    const preview = document.getElementById('crosshairPreview');
+    const halfSize = crosshairConfig.size / 2;
+    preview.innerHTML = `
         <style>
             .crosshair-h, .crosshair-v {
                 position: absolute;
@@ -191,16 +212,34 @@ function togglePause() {
     isPaused = !isPaused;
     
     const pauseMenu = document.getElementById('pauseMenu');
+    const optionsMenu = document.getElementById('optionsMenu');
+    
     if (isPaused) {
         pauseMenu.classList.remove('hidden');
+        optionsMenu.classList.add('hidden');
         if (isPointerLocked) {
             document.exitPointerLock();
         }
     } else {
         pauseMenu.classList.add('hidden');
+        optionsMenu.classList.add('hidden');
         if (!isPointerLocked) {
             document.body.requestPointerLock();
         }
+    }
+}
+
+function toggleOptionsMenu() {
+    const optionsMenu = document.getElementById('optionsMenu');
+    const pauseMenu = document.getElementById('pauseMenu');
+    
+    if (optionsMenu.classList.contains('hidden')) {
+        pauseMenu.classList.add('hidden');
+        optionsMenu.classList.remove('hidden');
+        updateCrosshairPreview();
+    } else {
+        optionsMenu.classList.add('hidden');
+        pauseMenu.classList.remove('hidden');
     }
 }
 
@@ -273,6 +312,82 @@ function setupPointerLock() {
     document.addEventListener('mozpointerlockchange', handlePointerLockChange);
 }
 
+function setupOptionsMenu() {
+    const sizeSlider = document.getElementById('sizeSlider');
+    const thicknessSlider = document.getElementById('thicknessSlider');
+    const colorPicker = document.getElementById('colorPicker');
+    const sizeValue = document.getElementById('sizeValue');
+    const thicknessValue = document.getElementById('thicknessValue');
+
+    sizeSlider.value = crosshairConfig.size;
+    thicknessSlider.value = crosshairConfig.thickness;
+    colorPicker.value = crosshairConfig.color;
+    sizeValue.textContent = crosshairConfig.size;
+    thicknessValue.textContent = crosshairConfig.thickness;
+
+    sizeSlider.addEventListener('input', () => {
+        crosshairConfig.size = parseInt(sizeSlider.value);
+        sizeValue.textContent = sizeSlider.value;
+        updateCrosshairPreview();
+        updateCrosshair();
+    });
+
+    thicknessSlider.addEventListener('input', () => {
+        crosshairConfig.thickness = parseFloat(thicknessSlider.value);
+        thicknessValue.textContent = thicknessSlider.value;
+        updateCrosshairPreview();
+        updateCrosshair();
+    });
+
+    colorPicker.addEventListener('input', () => {
+        crosshairConfig.color = colorPicker.value;
+        updateCrosshairPreview();
+        updateCrosshair();
+    });
+
+    document.getElementById('saveOptionsButton').addEventListener('click', () => {
+        toggleOptionsMenu();
+    });
+
+    document.getElementById('backOptionsButton').addEventListener('click', () => {
+        toggleOptionsMenu();
+    });
+}
+
+function setupEventListeners() {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('click', onMouseClick);
+    window.addEventListener('resize', onWindowResize);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isPointerLocked) {
+            event.preventDefault();
+            togglePause();
+        }
+    });
+
+    document.getElementById('resumeButton').addEventListener('click', () => {
+        if (isPaused) {
+            togglePause();
+        }
+    });
+
+    document.getElementById('restartButton').addEventListener('click', () => {
+        if (isPaused) {
+            resetGame();
+            togglePause();
+        }
+    });
+
+    document.getElementById('optionsButton').addEventListener('click', toggleOptionsMenu);
+
+    document.getElementById('quitButton').addEventListener('click', () => {
+        if (confirm("Voulez-vous vraiment quitter ?")) {
+            window.location.reload();
+        }
+    });
+}
+
 function startTimer() {
     setInterval(() => {
         if (!isPaused && gameStats.timeLeft > 0) {
@@ -288,55 +403,25 @@ function startTimer() {
     }, 1000);
 }
 
-document.getElementById('resumeButton').addEventListener('click', () => {
-    if (isPaused) {
-        togglePause();
-    }
-});
-
-document.getElementById('restartButton').addEventListener('click', () => {
-    if (isPaused) {
-        resetGame();
-        togglePause();
-    }
-});
-
-document.getElementById('optionsButton').addEventListener('click', () => {
-    alert("Options à venir !");
-});
-
-document.getElementById('quitButton').addEventListener('click', () => {
-    if (confirm("Voulez-vous vraiment quitter ?")) {
-        window.location.reload();
-    }
-});
-
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && isPointerLocked) {
-        event.preventDefault();
-        togglePause();
-    }
-});
-
-window.addEventListener('mousemove', handleMouseMove);
-window.addEventListener('click', onMouseClick);
-window.addEventListener('resize', onWindowResize);
-
-setupPointerLock();
-updateCrosshair();
-
-for (let i = 0; i < 3; i++) {
-    addNewSphere();
-}
-
-startTimer();
-
 function animate() {
     requestAnimationFrame(animate);
     if (!isPaused) {
         renderer.render(scene, camera);
     }
-    updateCrosshair();
 }
 
-animate();
+function init() {
+    setupPointerLock();
+    setupOptionsMenu();
+    setupEventListeners();
+    updateCrosshair();
+
+    for (let i = 0; i < 3; i++) {
+        addNewSphere();
+    }
+
+    startTimer();
+    animate();
+}
+
+init();
