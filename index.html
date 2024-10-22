@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <link href="./style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="ui-container">
+        <div class="stats-container">
+            <div class="stat-section">
+                <div class="stat-content">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-section timer">
+                <div class="stat-content">
+                    <div class="stat-value" id="timer">1:00</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-section">
+                <div class="stat-content">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pauseMenu" class="pause-menu hidden">
+        <div class="pause-content">
+            <h2>PAUSE</h2>
+            <div class="menu-buttons">
+                <button id="resumeButton" class="menu-button">REPRENDRE</button>
+                <button id="restartButton" class="menu-button">RECOMMENCER</button>
+                <button id="optionsButton" class="menu-button">OPTIONS</button>
+                <button id="quitButton" class="menu-button">QUITTER</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="game.js"></script>
+</body>
+
+</html>
