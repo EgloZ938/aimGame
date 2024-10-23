@@ -1099,30 +1099,18 @@ function disableButton(buttonId) {
     if (button) {
         const originalText = button.textContent;
         
+        // Désactivation du bouton
         button.classList.add('disabled');
         button.style.pointerEvents = 'none';
         button.style.opacity = '0.5';
         button.style.cursor = 'not-allowed';
         
-        let dots = 0;
-        const loadingInterval = setInterval(() => {
-            if (!button.classList.contains('disabled')) {
-                clearInterval(loadingInterval);
-                button.textContent = originalText;
-                return;
-            }
-            
-            dots = (dots + 1) % 4;
-            button.textContent = originalText + '.'.repeat(dots);
-        }, 400); // Ralenti à 400ms
-        
-        // Animation plus longue
+        // Sécurité pour s'assurer que le texte reste intact
         setTimeout(() => {
-            clearInterval(loadingInterval);
             if (button.classList.contains('disabled')) {
                 button.textContent = originalText;
             }
-        }, 2000); // Augmenté à 2s
+        }, 2000);
     }
 }
 
