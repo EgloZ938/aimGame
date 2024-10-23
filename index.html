@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game</title>
     <link href="./style.css" rel="stylesheet">
 </head>
-
 <body>
     <div class="ui-container">
         <div class="stats-container">
@@ -49,32 +47,84 @@
     <div id="optionsMenu" class="pause-menu hidden">
         <div class="pause-content options-content">
             <h2>OPTIONS</h2>
-            <div class="crosshair-section">
-                <div class="preview-box">
-                    <div id="crosshairPreview"></div>
+
+            <div class="options-scroll-area">
+                <!-- Section Crosshair -->
+                <div class="crosshair-section">
+                    <div class="preview-box">
+                        <div id="crosshairPreview"></div>
+                    </div>
+                    <div class="options-controls">
+                        <div class="option-row">
+                            <label>Taille</label>
+                            <input type="range" id="sizeSlider" min="0" max="20" value="5">
+                            <input type="number" id="sizeInput" min="0" max="20" value="5" class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Épaisseur</label>
+                            <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
+                            <input type="number" id="thicknessInput" min="1" max="5" value="2" step="0.5" class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Espacement</label>
+                            <input type="range" id="gapSlider" min="0" max="10" value="2">
+                            <input type="number" id="gapInput" min="0" max="10" value="2" class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Couleur</label>
+                            <input type="color" id="colorPicker" value="#00ff00">
+                        </div>
+                    </div>
                 </div>
-                <div class="options-controls">
-                    <div class="option-row">
-                        <label>Taille</label>
-                        <input type="range" id="sizeSlider" min="0" max="20" value="5">
-                        <input type="number" id="sizeInput" min="0" max="20" value="5" class="number-input">
-                    </div>
-                    <div class="option-row">
-                        <label>Épaisseur</label>
-                        <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
-                        <input type="number" id="thicknessInput" min="1" max="5" value="2" step="0.5" class="number-input">
-                    </div>
-                    <div class="option-row">
-                        <label>Espacement</label>
-                        <input type="range" id="gapSlider" min="0" max="10" value="2">
-                        <input type="number" id="gapInput" min="0" max="10" value="2" class="number-input">
-                    </div>
-                    <div class="option-row">
-                        <label>Couleur</label>
-                        <input type="color" id="colorPicker" value="#00ff00">
+                
+                <!-- Section Sensitivity -->
+                <div class="sensitivity-section">
+                    <h3 class="section-title">Sensitivity Calculator</h3>
+                    <div class="sensitivity-controls">
+                        <div class="option-row">
+                            <label>Game</label>
+                            <select id="gameSelector" class="game-select">
+                                <option value="VALORANT">Valorant</option>
+                                <option value="CSGO">CS2 (CS:GO)</option>
+                                <option value="APEX">Apex Legends</option>
+                                <option value="OVERWATCH">Overwatch 2</option>
+                                <option value="FORTNITE">Fortnite</option>
+                                <option value="R6">Rainbow Six Siege</option>
+                                <option value="COD">Call of Duty</option>
+                                <option value="BF">Battlefield</option>
+                                <option value="QUAKE">Quake Champions</option>
+                                <option value="DOOM">DOOM Eternal</option>
+                                <option value="DESTINY2">Destiny 2</option>
+                                <option value="PUBG">PUBG: BATTLEGROUNDS</option>
+                                <option value="SPLITGATE">Splitgate</option>
+                                <option value="PALADINS">Paladins</option>
+                                <option value="DIABOTICAL">Diabotical</option>
+                                <option value="HALO">Halo Infinite</option>
+                                <option value="WARFRAME">Warframe</option>
+                                <option value="RUST">Rust</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label>Game Sensitivity</label>
+                            <input type="range" id="sensitivitySlider" min="0.001" max="10" step="0.001" value="0.26" class="sensitivity-slider">
+                            <input type="number" id="gameSensitivity" class="number-input" value="0.26" step="0.001" min="0.001">
+                        </div>
+                        <div class="option-row">
+                            <label>Mouse DPI</label>
+                            <input type="number" id="mouseDPI" class="number-input" value="800" step="50" min="50">
+                        </div>
+                        <div class="option-row">
+                            <label>FOV</label>
+                            <input type="range" id="fovSlider" min="60" max="120" step="1" value="103" class="fov-slider">
+                            <input type="number" id="fovInput" class="number-input" value="103" min="60" max="120">
+                        </div>
+                        <div class="calculated-value">
+                            <span id="cm360Value">0.00 cm/360°</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <div class="menu-buttons">
                 <button id="saveOptionsButton" class="menu-button">SAUVEGARDER</button>
                 <button id="backOptionsButton" class="menu-button">RETOUR</button>
@@ -91,5 +141,4 @@
     </script>
     <script type="module" src="game.js"></script>
 </body>
-
 </html>
