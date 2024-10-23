@@ -404,28 +404,95 @@ function addNewSphere() {
     }
 }
 
-function resetGame() {
-    gameStats.hits = 0;
-    gameStats.totalShots = 0;
-    gameStats.score = 0;
-    gameStats.timeLeft = 60;
-    gameStats.accuracy = 0;
-    gameStats.streak = 0;
-    gameStats.multiplier = 1;
+function isLocked() {
+    return document.pointerLockElement || 
+           document.mozPointerLockElement || 
+           document.webkitPointerLockElement;
+}
 
-    spheres.forEach(sphere => scene.remove(sphere));
-    spheres.length = 0;
+async function resetGame() {
+    // Désactiver les boutons pendant le reset
+    disableButton('restartButton');
+    disableButton('resumeButton');
+    disableButton('optionsButton'); // Désactivons aussi le bouton options pendant la transition
 
-    for (let i = 0; i < 3; i++) {
-        addNewSphere();
+    try {
+        if (isPointerLocked) {
+            const wasLocked = isLocked();
+            
+            if (wasLocked) {
+                try {
+                    await Promise.race([
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000)), // Augmenté à 2s
+                        new Promise(resolve => {
+                            function checkLock() {
+                                if (!isLocked()) {
+                                    resolve();
+                                } else {
+                                    setTimeout(checkLock, 50); // Vérifie plus fréquemment
+                                }
+                            }
+                            
+                            if (document.exitPointerLock) {
+                                document.exitPointerLock();
+                            } else if (document.mozExitPointerLock) {
+                                document.mozExitPointerLock();
+                            } else if (document.webkitExitPointerLock) {
+                                document.webkitExitPointerLock();
+                            }
+                            
+                            checkLock();
+                        })
+                    ]);
+                } catch (error) {
+                    console.warn('Timeout lors de la sortie du Pointer Lock, continuation...');
+                }
+            }
+            
+            // Augmentons le délai d'attente après la sortie du Pointer Lock
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // Reset du jeu...
+        gameStats.hits = 0;
+        gameStats.totalShots = 0;
+        gameStats.score = 0;
+        gameStats.timeLeft = 60;
+        gameStats.accuracy = 0;
+        gameStats.streak = 0;
+        gameStats.multiplier = 1;
+
+        spheres.forEach(sphere => scene.remove(sphere));
+        spheres.length = 0;
+
+        for (let i = 0; i < 3; i++) {
+            addNewSphere();
+        }
+
+        updateStats();
+        
+        // Attente supplémentaire avant de réactiver les boutons
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+    } catch (error) {
+        console.error('Erreur lors du reset du jeu:', error);
+        updateStats();
+    } finally {
+        // Délai plus long avant de réactiver les boutons
+        setTimeout(() => {
+            enableButton('restartButton');
+            enableButton('resumeButton');
+            enableButton('optionsButton');
+        }, 1000);
     }
-
-    updateStats();
 }
 
 function togglePause() {
-    isPaused = !isPaused;
+    disableButton('restartButton');
+    disableButton('resumeButton');
+    disableButton('optionsButton');
 
+    isPaused = !isPaused;
     const pauseMenu = document.getElementById('pauseMenu');
     const optionsMenu = document.getElementById('optionsMenu');
 
@@ -433,14 +500,37 @@ function togglePause() {
         pauseMenu.classList.remove('hidden');
         optionsMenu.classList.add('hidden');
         if (isPointerLocked) {
-            document.exitPointerLock();
+            try {
+                if (document.exitPointerLock) {
+                    document.exitPointerLock();
+                } else if (document.mozExitPointerLock) {
+                    document.mozExitPointerLock();
+                } else if (document.webkitExitPointerLock) {
+                    document.webkitExitPointerLock();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la sortie du Pointer Lock:', error);
+            }
         }
+        // Attendre avant de réactiver les boutons
+        setTimeout(() => {
+            enableButton('restartButton');
+            enableButton('resumeButton');
+            enableButton('optionsButton');
+        }, 1000);
     } else {
         pauseMenu.classList.add('hidden');
         optionsMenu.classList.add('hidden');
-        if (!isPointerLocked) {
-            document.body.requestPointerLock();
-        }
+        // Attendre avant de demander le Pointer Lock
+        setTimeout(() => {
+            requestPointerLockWithFallback();
+            // Réactiver les boutons après la demande de Pointer Lock
+            setTimeout(() => {
+                enableButton('restartButton');
+                enableButton('resumeButton');
+                enableButton('optionsButton');
+            }, 1000);
+        }, 500);
     }
 }
 
@@ -715,16 +805,228 @@ function setupOptionsMenu() {
 }
 
 function setupPointerLock() {
-    const element = document.body;
 
+    function checkPointerLockSupport() {
+        return 'pointerLockElement' in document ||
+            'mozPointerLockElement' in document ||
+            'webkitPointerLockElement' in document;
+    }
+
+    const element = document.body;
+    let pointerLockTimeout;
+
+    const havePointerLock = 'pointerLockElement' in document ||
+        'mozPointerLockElement' in document ||
+        'webkitPointerLockElement' in document;
+
+    if (!havePointerLock) {
+        alert('Votre navigateur ne supporte pas le Pointer Lock API. Le jeu pourrait ne pas fonctionner correctement.');
+        return;
+    }
+
+    // Définition de requestPointerLockWithFallback dans la portée globale
+    window.requestPointerLockWithFallback = function() {
+        try {
+            // Vérifiez si le document est visible
+            if (document.hidden) {
+                return;
+            }
+    
+            // Ajoutez une vérification des permissions pour Chrome
+            if ('permissions' in navigator) {
+                navigator.permissions.query({ name: 'pointerLock' })
+                    .then(permissionStatus => {
+                        if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+                            requestPointerLockWithVendorPrefixes();
+                        }
+                    })
+                    .catch(() => {
+                        // Si la requête de permission échoue, essayez quand même
+                        requestPointerLockWithVendorPrefixes();
+                    });
+            } else {
+                requestPointerLockWithVendorPrefixes();
+            }
+        } catch (error) {
+            console.error('Erreur lors de la demande de Pointer Lock:', error);
+            retryPointerLock();
+        }
+    };
+
+    function requestPointerLockWithVendorPrefixes() {
+        if (document.pointerLockElement || 
+            document.mozPointerLockElement || 
+            document.webkitPointerLockElement) {
+            // Déjà verrouillé
+            return;
+        }
+
+        const element = document.body;
+        try {
+            if (element.requestPointerLock) {
+                element.requestPointerLock();
+            } else if (element.mozRequestPointerLock) {
+                element.mozRequestPointerLock();
+            } else if (element.webkitRequestPointerLock) {
+                element.webkitRequestPointerLock();
+            }
+        } catch (error) {
+            console.error('Erreur lors de la demande de Pointer Lock:', error);
+            retryPointerLock();
+        }
+    }
+
+    function retryPointerLock() {
+        clearTimeout(pointerLockTimeout);
+        pointerLockTimeout = setTimeout(() => {
+            if (!isPointerLocked && !isPaused && !document.hidden) {
+                requestPointerLockWithFallback();
+            }
+        }, 100);
+    }
+
+    function handlePointerLockChange() {
+        const lockElement = document.pointerLockElement ||
+            document.mozPointerLockElement ||
+            document.webkitPointerLockElement;
+    
+        const wasLocked = isPointerLocked;
+        isPointerLocked = lockElement === element;
+    
+        // Gestion spéciale pour Chrome/Safari qui peuvent perdre le lock lors du changement d'onglet
+        if (wasLocked && !isPointerLocked) {
+            if (document.hidden) {
+                // Le document n'est plus visible (changement d'onglet)
+                document.addEventListener('visibilitychange', function onVisibilityChange() {
+                    if (!document.hidden && !isPaused) {
+                        requestPointerLockWithFallback();
+                    }
+                    document.removeEventListener('visibilitychange', onVisibilityChange);
+                });
+            } else if (!isPaused) {
+                clearTimeout(pointerLockTimeout);
+                togglePause();
+            }
+        }
+    }
+
+    function handlePointerLockError(e) {
+        console.error('Erreur Pointer Lock:', e);
+        isPointerLocked = false;
+        
+        if (!isPaused) {
+            togglePause();
+        }
+        
+        if (!(e instanceof SecurityError)) {
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            function attemptRetry() {
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    setTimeout(() => {
+                        if (!isPointerLocked && !isPaused && !document.hidden) {
+                            console.log(`Tentative de récupération ${retryCount}/${maxRetries}`);
+                            retryPointerLock();
+                        }
+                    }, 1000 * retryCount); // Délai croissant entre les tentatives
+                }
+            }
+            
+            attemptRetry();
+        }
+    }
+
+    // Écouteurs d'événements
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+    document.addEventListener('mozpointerlockchange', handlePointerLockChange);
+    document.addEventListener('webkitpointerlockchange', handlePointerLockChange);
+    
+    document.addEventListener('pointerlockerror', handlePointerLockError);
+    document.addEventListener('mozpointerlockerror', handlePointerLockError);
+    document.addEventListener('webkitpointerlockerror', handlePointerLockError);
+
+    // Click handler
     document.addEventListener('click', () => {
         if (!isPointerLocked && !isPaused) {
-            element.requestPointerLock();
+            requestPointerLockWithFallback();
         }
     });
 
-    document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('mozpointerlockchange', handlePointerLockChange);
+    window.addEventListener('beforeunload', () => {
+        if (isPointerLocked) {
+            document.exitPointerLock();
+        }
+    });
+
+    if ('permissions' in navigator) {
+        navigator.permissions.query({ name: 'pointerLock' })
+            .then(permissionStatus => {
+                permissionStatus.onchange = () => {
+                    if (permissionStatus.state === 'denied') {
+                        console.warn('Permission Pointer Lock refusée');
+                        isPointerLocked = false;
+                        if (!isPaused) {
+                            togglePause();
+                        }
+                    }
+                };
+            })
+            .catch(error => {
+                console.warn('Erreur lors de la vérification des permissions:', error);
+            });
+    }
+}
+
+function addExtraEventListeners() {
+    // Gestion de la perte de focus
+    window.addEventListener('blur', () => {
+        if (isPointerLocked && !isPaused) {
+            togglePause();
+        }
+    });
+
+    // Gestion du changement de visibilité
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && isPointerLocked && !isPaused) {
+            togglePause();
+        }
+    });
+
+    // Gestion de la sortie de la fenêtre
+    document.addEventListener('mouseleave', () => {
+        if (isPointerLocked && !isPaused) {
+            togglePause();
+        }
+    });
+
+    // Gestion du redimensionnement de la fenêtre
+    window.addEventListener('resize', () => {
+        if (isPointerLocked && !isPaused) {
+            // Petit délai pour laisser la fenêtre se stabiliser
+            setTimeout(() => {
+                if (!document.hidden) {
+                    requestPointerLockWithFallback();
+                }
+            }, 100);
+        }
+    });
+
+    // Gestion des erreurs de contexte
+    window.addEventListener('error', (e) => {
+        console.error('Erreur globale:', e);
+        if (isPointerLocked && !isPaused) {
+            togglePause();
+        }
+    });
+
+    // Gestion de la perte de connexion
+    window.addEventListener('offline', () => {
+        if (isPointerLocked && !isPaused) {
+            togglePause();
+        }
+    });
 }
 
 function setupEventListeners() {
@@ -740,14 +1042,15 @@ function setupEventListeners() {
     });
 
     document.getElementById('resumeButton').addEventListener('click', () => {
-        if (isPaused) {
+        if (isPaused && !document.getElementById('resumeButton').classList.contains('disabled')) {
             togglePause();
         }
     });
 
-    document.getElementById('restartButton').addEventListener('click', () => {
-        if (isPaused) {
-            resetGame();
+    document.getElementById('restartButton').addEventListener('click', async () => {
+        if (isPaused && !document.getElementById('restartButton').classList.contains('disabled')) {
+            await resetGame();
+            await new Promise(resolve => setTimeout(resolve, 100));
             togglePause();
         }
     });
@@ -782,11 +1085,64 @@ function animate() {
     }
 }
 
+function checkDeviceSupport() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        alert('Ce jeu nécessite une souris et un clavier pour fonctionner correctement.');
+        return false;
+    }
+    return true;
+}
+
+function disableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        const originalText = button.textContent;
+        
+        button.classList.add('disabled');
+        button.style.pointerEvents = 'none';
+        button.style.opacity = '0.5';
+        button.style.cursor = 'not-allowed';
+        
+        let dots = 0;
+        const loadingInterval = setInterval(() => {
+            if (!button.classList.contains('disabled')) {
+                clearInterval(loadingInterval);
+                button.textContent = originalText;
+                return;
+            }
+            
+            dots = (dots + 1) % 4;
+            button.textContent = originalText + '.'.repeat(dots);
+        }, 400); // Ralenti à 400ms
+        
+        // Animation plus longue
+        setTimeout(() => {
+            clearInterval(loadingInterval);
+            if (button.classList.contains('disabled')) {
+                button.textContent = originalText;
+            }
+        }, 2000); // Augmenté à 2s
+    }
+}
+
+function enableButton(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.classList.remove('disabled');
+        button.style.pointerEvents = 'auto';
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+    }
+}
+
 function init() {
     setupPointerLock();
     setupOptionsMenu();
     setupEventListeners();
+    addExtraEventListeners();
     updateCrosshair();
+    if (!checkDeviceSupport()) return;
 
     for (let i = 0; i < 3; i++) {
         addNewSphere();
