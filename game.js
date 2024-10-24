@@ -396,7 +396,7 @@ directionalLight.position.set(5, 5, 5);
 scene.add(directionalLight);
 
 const spheres = [];
-const sphereRadius = 1.5;
+const sphereRadius = 1.2;
 const minDistance = 3;
 const targetZ = -15; // Distance fixe des cibles
 const boundary = {
