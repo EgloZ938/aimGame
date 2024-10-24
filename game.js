@@ -201,51 +201,37 @@ class SensitivityCalculator {
     calculateThreeJSSensitivity(cm360) {
         const gameConfig = GAME_MULTIPLIERS[this.currentGame];
         if (!gameConfig) return 0;
-    
-        // Calculer les counts pour un 360
-        const countsFor360 = (cm360 / 2.54) * this.dpi;
         
-        // Convertir en radians par pixel de mouvement
-        const radiansFor360 = Math.PI * 2;
-        let radiansPerCount = radiansFor360 / countsFor360;
-    
-        // Ajustement basé sur la distance de l'écran et le FOV
-        const aspectRatio = window.innerWidth / window.innerHeight;
-        const screenDistance = REFERENCE_SETTINGS.distance * REFERENCE_SETTINGS.monitorScale;
-        
-        // Calcul précis de l'angle visuel
-        const visualAngle = 2 * Math.atan(Math.tan((this.fov * Math.PI / 180) / 2) * 
-                           (gameConfig.fovType === 'horizontal' ? 1 : aspectRatio));
-        
-        // Ajustement FOV avec compensation d'aspect ratio
-        let fovCompensation = 1.0;
-        if (gameConfig.fovType === 'horizontal') {
-            const verticalFov = this.convertFovToVertical(this.fov, aspectRatio);
-            const defaultVerticalFov = this.convertFovToVertical(gameConfig.defaultFov, aspectRatio);
-            
-            // Compensation précise des FOV horizontal et vertical
-            const fovScaleX = Math.tan((this.fov * Math.PI / 360)) / 
-                             Math.tan((gameConfig.defaultFov * Math.PI / 360));
-            const fovScaleY = Math.tan((verticalFov * Math.PI / 360)) / 
-                             Math.tan((defaultVerticalFov * Math.PI / 360));
-            
-            fovCompensation = Math.sqrt(fovScaleX * fovScaleY);
-        }
-    
         if (cm360 <= 0 || this.dpi <= 0) {
             console.warn('Invalid cm360 or DPI value');
             return 0;
         }
-
-        // Normalisation du yaw avec le jeu de référence
-        const referenceYaw = GAME_MULTIPLIERS[REFERENCE_SETTINGS.referenceGame].yawPerDegree;
-        const normalizedYaw = gameConfig.yawPerDegree / referenceYaw;
+    
+        // 1. Conversion de cm/360 en counts/360
+        const countsFor360 = (cm360 / 2.54) * this.dpi;
         
-        // Application des facteurs de correction
+        // 2. Conversion basique en radians par pixel
+        const radiansFor360 = Math.PI * 2;
+        let radiansPerCount = radiansFor360 / countsFor360;
+        
+        // 3. Compensation FOV uniquement si nécessaire
+        let fovCompensation = 1.0;
+        const aspectRatio = window.innerWidth / window.innerHeight;
+        
+        if (gameConfig.fovType === 'horizontal') {
+            const verticalFov = this.convertFovToVertical(this.fov, aspectRatio);
+            const defaultVerticalFov = this.convertFovToVertical(gameConfig.defaultFov, aspectRatio);
+            
+            // Compensation FOV simplifiée
+            fovCompensation = Math.tan((this.fov * Math.PI / 360)) / 
+                             Math.tan((gameConfig.defaultFov * Math.PI / 360));
+        }
+    
+        // 4. Facteur de correction pour le jeu
         const gameCorrection = REFERENCE_SETTINGS.correctionFactors[this.currentGame];
         
-        // Calcul final avec tous les facteurs
-        return radiansPerCount * normalizedYaw * fovCompensation * gameCorrection;
+        // Calcul final simplifié
+        return radiansPerCount * fovCompensation * gameCorrection;
     }
 
     convertFovToVertical(horizontalFov, aspectRatio) {
@@ -270,6 +256,30 @@ class SensitivityCalculator {
             this.fov = parseFloat(fov);
         }
     }
+}
+
+function testSensitivityAccuracy() {
+    // Configuration initiale (exemple avec Valorant)
+    const sensCalc = new SensitivityCalculator();
+    sensCalc.updateValues(0.26, 800, 103, 'VALORANT');
+    
+    // Calculer cm/360
+    const cm360 = sensCalc.calculateCM360();
+    console.log(`cm/360: ${cm360}`);
+    
+    // Test physique : déplacer la souris de X pixels et vérifier l'angle
+    let totalRotation = 0;
+    const pixelsFor360 = (cm360 / 2.54) * sensCalc.dpi;
+    console.log(`Pixels nécessaires pour un 360: ${pixelsFor360}`);
+    
+    // Simuler un mouvement de souris
+    const mouseMovement = 100; // pixels
+    const expectedRotation = (mouseMovement / pixelsFor360) * 360;
+    const actualRotation = (mouseMovement * sensCalc.calculateThreeJSSensitivity(cm360)) * (180 / Math.PI);
+    
+    console.log(`Rotation attendue: ${expectedRotation}°`);
+    console.log(`Rotation actuelle: ${actualRotation}°`);
+    console.log(`Différence: ${Math.abs(expectedRotation - actualRotation)}°`);
 }
 
 class SensitivityProfile {
