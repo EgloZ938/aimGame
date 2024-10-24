@@ -399,3 +399,135 @@ canvas {
 .hidden {
     display: none;
 }
+
+.profile-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.profile-section h3 {
+    color: white;
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.profile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.profile-controls input[type="text"] {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.profile-controls select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+    margin: 5px 0;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.profile-controls button {
+    flex: 1;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.profile-controls button:hover {
+    background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+#deleteProfile {
+    background: linear-gradient(90deg, rgba(255,0,0,0.1) 0%, rgba(255,0,0,0.05) 100%);
+}
+
+#deleteProfile:hover {
+    background: linear-gradient(90deg, rgba(255,0,0,0.2) 0%, rgba(255,0,0,0.1) 100%);
+}
+
+.profile-controls input[type="text"],
+.profile-controls select {
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 18px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0;
+    clip-path: polygon(
+        10px 0,
+        100% 0,
+        100% calc(100% - 10px),
+        calc(100% - 10px) 100%,
+        0 100%,
+        0 10px
+    );
+    transition: background 0.3s ease;
+}
+
+.profile-controls input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.profile-controls input[type="text"]:focus,
+.profile-controls select:focus {
+    outline: none;
+    background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+.profile-controls input[type="text"]:hover,
+.profile-controls select:hover {
+    background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+/* Style pour les options du select */
+.profile-controls select option {
+    background-color: #1a1a3a;
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* Ajuster l'espacement */
+.profile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Augmenté pour matcher l'espacement des boutons */
+}
+
+/* Conserver le style actuel des boutons mais assurer la cohérence */
+.profile-controls button {
+    padding: 15px 30px; /* Ajusté pour matcher les inputs */
+    font-size: 18px;
+    clip-path: polygon(
+        10px 0,
+        100% 0,
+        100% calc(100% - 10px),
+        calc(100% - 10px) 100%,
+        0 100%,
+        0 10px
+    );
+}

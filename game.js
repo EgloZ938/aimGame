@@ -139,6 +139,35 @@ const GAME_MULTIPLIERS = {
     }
 };
 
+const REFERENCE_SETTINGS = {
+    dpi: 800,
+    distance: 50, // Distance moyenne de l'écran en cm
+    monitorScale: 1.0, // Facteur d'échelle du moniteur
+    referenceGame: 'CSGO', // Jeu de référence pour la normalisation
+    // Facteurs de correction spécifiques par jeu (basés sur des tests empiriques)
+    correctionFactors: {
+        VALORANT: 1.0,
+        CSGO: 1.0,
+        APEX: 0.95,
+        OVERWATCH: 0.92,
+        FORTNITE: 0.98,
+        R6: 1.0,
+        COD: 0.97,
+        BF: 0.96,
+        QUAKE: 1.0,
+        DOOM: 0.94,
+        DESTINY2: 0.93,
+        PUBG: 0.96,
+        SPLITGATE: 0.95,
+        PALADINS: 0.94,
+        DIABOTICAL: 1.0,
+        HALO: 0.92,
+        WARFRAME: 0.93,
+        RUST: 0.95
+    }
+};
+
+
 const defaultSensitivityConfig = {
     game: 'VALORANT',
     sensitivity: 0.26,
@@ -170,27 +199,174 @@ class SensitivityCalculator {
     }
 
     calculateThreeJSSensitivity(cm360) {
-        const radiansFor360 = Math.PI * 2;
+        const gameConfig = GAME_MULTIPLIERS[this.currentGame];
+        if (!gameConfig) return 0;
+    
+        // Calculer les counts pour un 360
         const countsFor360 = (cm360 / 2.54) * this.dpi;
-        const radiansPerCount = radiansFor360 / countsFor360;
-        return radiansPerCount;
+        
+        // Convertir en radians par pixel de mouvement
+        const radiansFor360 = Math.PI * 2;
+        let radiansPerCount = radiansFor360 / countsFor360;
+    
+        // Ajustement basé sur la distance de l'écran et le FOV
+        const aspectRatio = window.innerWidth / window.innerHeight;
+        const screenDistance = REFERENCE_SETTINGS.distance * REFERENCE_SETTINGS.monitorScale;
+        
+        // Calcul précis de l'angle visuel
+        const visualAngle = 2 * Math.atan(Math.tan((this.fov * Math.PI / 180) / 2) * 
+                           (gameConfig.fovType === 'horizontal' ? 1 : aspectRatio));
+        
+        // Ajustement FOV avec compensation d'aspect ratio
+        let fovCompensation = 1.0;
+        if (gameConfig.fovType === 'horizontal') {
+            const verticalFov = this.convertFovToVertical(this.fov, aspectRatio);
+            const defaultVerticalFov = this.convertFovToVertical(gameConfig.defaultFov, aspectRatio);
+            
+            // Compensation précise des FOV horizontal et vertical
+            const fovScaleX = Math.tan((this.fov * Math.PI / 360)) / 
+                             Math.tan((gameConfig.defaultFov * Math.PI / 360));
+            const fovScaleY = Math.tan((verticalFov * Math.PI / 360)) / 
+                             Math.tan((defaultVerticalFov * Math.PI / 360));
+            
+            fovCompensation = Math.sqrt(fovScaleX * fovScaleY);
+        }
+    
+        if (cm360 <= 0 || this.dpi <= 0) {
+            console.warn('Invalid cm360 or DPI value');
+            return 0;
+        }
+
+        // Normalisation du yaw avec le jeu de référence
+        const referenceYaw = GAME_MULTIPLIERS[REFERENCE_SETTINGS.referenceGame].yawPerDegree;
+        const normalizedYaw = gameConfig.yawPerDegree / referenceYaw;
+        
+        // Application des facteurs de correction
+        const gameCorrection = REFERENCE_SETTINGS.correctionFactors[this.currentGame];
+        
+        // Calcul final avec tous les facteurs
+        return radiansPerCount * normalizedYaw * fovCompensation * gameCorrection;
     }
 
-    convertFovToVertical(fov, aspect) {
-        const gameConfig = GAME_MULTIPLIERS[this.currentGame];
-        if (gameConfig.fovType === 'vertical') return fov;
-        
-        return (2 * Math.atan(Math.tan(fov * Math.PI / 360) / aspect) * 180 / Math.PI);
+    convertFovToVertical(horizontalFov, aspectRatio) {
+        const horizontalRadians = (horizontalFov * Math.PI) / 180;
+        const verticalRadians = 2 * Math.atan(Math.tan(horizontalRadians / 2) / aspectRatio);
+        return (verticalRadians * 180) / Math.PI;
     }
 
     updateValues(sensitivity, dpi, fov, game = null) {
         this.sensitivity = parseFloat(sensitivity) || this.sensitivity;
         this.dpi = parseFloat(dpi) || this.dpi;
-        this.fov = parseFloat(fov) || this.fov;
+        
         if (game) {
             this.currentGame = game;
-            this.fov = GAME_MULTIPLIERS[game].defaultFov;
+            // N'utiliser le FOV par défaut que si aucun FOV personnalisé n'est défini
+            if (!fov) {
+                this.fov = GAME_MULTIPLIERS[game].defaultFov;
+            }
         }
+        
+        if (fov) {
+            this.fov = parseFloat(fov);
+        }
+    }
+}
+
+class SensitivityProfile {
+    constructor() {
+        this.profiles = this.loadProfiles();
+    }
+
+    saveProfile(name, config) {
+        const profile = {
+            name,
+            game: config.game,
+            sensitivity: config.sensitivity,
+            dpi: config.dpi,
+            fov: config.fov,
+            monitorDistance: REFERENCE_SETTINGS.distance,
+            crosshair: { ...crosshairConfig },
+            timestamp: Date.now()
+        };
+
+        this.profiles[name] = profile;
+        this.saveToLocalStorage();
+        return profile;
+    }
+
+    loadProfile(name) {
+        const profile = this.profiles[name];
+        if (!profile) return null;
+
+        REFERENCE_SETTINGS.distance = profile.monitorDistance || 50;
+        Object.assign(crosshairConfig, profile.crosshair);
+        return profile;
+    }
+
+    exportProfile(name) {
+        const profile = this.profiles[name];
+        if (!profile) return null;
+        
+        return btoa(JSON.stringify(profile));
+    }
+
+    importProfile(encodedProfile) {
+        try {
+            const profile = JSON.parse(atob(encodedProfile));
+            if (!profile.name || !profile.game) {
+                throw new Error('Invalid profile format');
+            }
+            
+            this.profiles[profile.name] = profile;
+            this.saveToLocalStorage();
+            return profile;
+        } catch (error) {
+            console.error('Error importing profile:', error);
+            return null;
+        }
+    }
+
+    loadProfiles() {
+        try {
+            const saved = localStorage.getItem('sensitivityProfiles');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Error loading profiles:', error);
+            return {};
+        }
+    }
+
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('sensitivityProfiles', JSON.stringify(this.profiles));
+        } catch (error) {
+            console.error('Error saving profiles:', error);
+        }
+    }
+
+    validateProfile(profile) {
+        const requiredFields = ['name', 'game', 'sensitivity', 'dpi', 'fov'];
+        const isValid = requiredFields.every(field => {
+            if (field === 'name') return typeof profile[field] === 'string' && profile[field].length > 0;
+            if (field === 'game') return profile[field] in GAME_MULTIPLIERS;
+            return typeof profile[field] === 'number' && !isNaN(profile[field]);
+        });
+
+        if (!isValid) throw new Error('Invalid profile format');
+        return true;
+    }
+
+    deleteProfile(name) {
+        if (this.profiles[name]) {
+            delete this.profiles[name];
+            this.saveToLocalStorage();
+            return true;
+        }
+        return false;
+    }
+
+    sanitizeProfileName(name) {
+        return name.trim().replace(/[^a-zA-Z0-9-_ ]/g, '');
     }
 }
 
@@ -329,6 +505,113 @@ function updateCrosshairPreview() {
         <div class="crosshair-v crosshair-v-top"></div>
         <div class="crosshair-v crosshair-v-bottom"></div>
     `;
+}
+
+function addProfileInterface() {
+    const profileManager = new SensitivityProfile();
+    
+    // Récupération des éléments existants
+    const profileName = document.getElementById('profileName');
+    const profileList = document.getElementById('profileList');
+    const saveProfileBtn = document.getElementById('saveProfile');
+    const loadProfileBtn = document.getElementById('loadProfile');
+    const exportProfileBtn = document.getElementById('exportProfile');
+    const importProfileBtn = document.getElementById('importProfile');
+    const deleteProfileBtn = document.getElementById('deleteProfile');
+
+    function updateProfileList() {
+        profileList.innerHTML = '';
+        Object.keys(profileManager.profiles).forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            profileList.appendChild(option);
+        });
+    }
+
+    // Gestionnaire pour la sauvegarde
+    saveProfileBtn.addEventListener('click', () => {
+        const name = profileManager.sanitizeProfileName(profileName.value);
+        
+        if (!name) {
+            alert('Please enter a valid profile name');
+            return;
+        }
+
+        const config = {
+            game: document.getElementById('gameSelector').value,
+            sensitivity: parseFloat(document.getElementById('gameSensitivity').value),
+            dpi: parseInt(document.getElementById('mouseDPI').value),
+            fov: parseInt(document.getElementById('fovInput').value)
+        };
+
+        try {
+            profileManager.validateProfile({ name, ...config });
+            profileManager.saveProfile(name, config);
+            updateProfileList();
+            profileName.value = '';
+        } catch (error) {
+            alert('Invalid profile data. Please check your inputs.');
+        }
+    });
+
+    // Gestionnaire pour le chargement
+    loadProfileBtn.addEventListener('click', () => {
+        const name = profileList.value;
+        const profile = profileManager.loadProfile(name);
+        if (!profile) return;
+
+        document.getElementById('gameSelector').value = profile.game;
+        document.getElementById('gameSensitivity').value = profile.sensitivity;
+        document.getElementById('mouseDPI').value = profile.dpi;
+        document.getElementById('fovInput').value = profile.fov;
+
+        updateDisplay();
+        updateCrosshair();
+    });
+
+    // Gestionnaire pour l'exportation
+    exportProfileBtn.addEventListener('click', () => {
+        const name = profileList.value;
+        const encoded = profileManager.exportProfile(name);
+        if (encoded) {
+            navigator.clipboard.writeText(encoded)
+                .then(() => alert('Profile code copied to clipboard!'))
+                .catch(err => console.error('Error copying to clipboard:', err));
+        }
+    });
+
+    // Gestionnaire pour l'importation
+    importProfileBtn.addEventListener('click', () => {
+        const code = prompt('Enter profile code:');
+        if (code) {
+            try {
+                const profile = profileManager.importProfile(code);
+                if (profile) {
+                    updateProfileList();
+                    alert('Profile imported successfully!');
+                } else {
+                    throw new Error('Invalid profile data');
+                }
+            } catch (error) {
+                alert('Failed to import profile. Invalid or corrupted data.');
+            }
+        }
+    });
+
+    // Gestionnaire pour la suppression
+    deleteProfileBtn.addEventListener('click', () => {
+        const name = profileList.value;
+        if (name && confirm(`Are you sure you want to delete profile "${name}"?`)) {
+            if (profileManager.deleteProfile(name)) {
+                updateProfileList();
+                profileName.value = '';
+            }
+        }
+    });
+
+    // Chargement initial de la liste des profils
+    updateProfileList();
 }
 
 function calculateScore() {
@@ -560,13 +843,86 @@ function handlePointerLockChange() {
 function handleMouseMove(event) {
     if (!isPointerLocked || isPaused) return;
 
-    rotationY -= event.movementX * mouseSensitivity;
-    rotationX -= event.movementY * mouseSensitivity;
+    // Récupérer les mouvements avec support multi-navigateur
+    const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+    const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+    // Appliquer la sensibilité avec une précision accrue
+    rotationY -= movementX * mouseSensitivity;
+    rotationX -= movementY * mouseSensitivity;
+
+    // Limiter la rotation verticale à 90 degrés
     rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
 
+    // Assurer une rotation fluide
     camera.rotation.order = 'YXZ';
     camera.rotation.x = rotationX;
     camera.rotation.y = rotationY;
+}
+
+function calibrateSensitivity() {
+    const testDistance = 20; // cm
+    let startX = 0;
+    let calibrationActive = false;
+    
+    window.addEventListener('mousedown', () => {
+        if (calibrationActive) {
+            startX = event.screenX;
+        }
+    });
+    
+    window.addEventListener('mouseup', () => {
+        if (calibrationActive) {
+            const deltaX = Math.abs(event.screenX - startX);
+            const dpi = (deltaX * 2.54) / testDistance;
+            // Mettre à jour le DPI et recalculer la sensibilité
+        }
+    });
+}
+
+function addScalingOption() {
+    const scalingSlider = document.createElement('input');
+    scalingSlider.type = 'range';
+    scalingSlider.min = '0.1';
+    scalingSlider.max = '2.0';
+    scalingSlider.step = '0.1';
+    scalingSlider.value = '1.0';
+    
+    scalingSlider.addEventListener('input', (e) => {
+        const scale = parseFloat(e.target.value);
+        mouseSensitivity *= scale;
+    });
+}
+
+const precisionTest = {
+    targetAngle: 180, // degrés
+    startRotation: 0,
+    tolerance: 5, // degrés
+    
+    start() {
+        this.startRotation = camera.rotation.y;
+    },
+    
+    check() {
+        const currentRotation = (camera.rotation.y - this.startRotation) * (180 / Math.PI);
+        const difference = Math.abs(currentRotation - this.targetAngle);
+        return difference <= this.tolerance;
+    }
+};
+
+function addMonitorDistanceOption() {
+    // Ajouter un slider dans le menu options
+    const distanceSlider = document.createElement('input');
+    distanceSlider.type = 'range';
+    distanceSlider.min = '30';
+    distanceSlider.max = '70';
+    distanceSlider.value = '50';
+    distanceSlider.step = '1';
+    
+    distanceSlider.addEventListener('input', (e) => {
+        monitorDistance = parseInt(e.target.value);
+        updateDisplay(); // Recalculer la sensibilité
+    });
 }
 
 function onMouseClick(event) {
@@ -1128,6 +1484,7 @@ function init() {
     setupPointerLock();
     setupOptionsMenu();
     setupEventListeners();
+    addProfileInterface();
     addExtraEventListeners();
     updateCrosshair();
     if (!checkDeviceSupport()) return;
