@@ -650,13 +650,32 @@ function updateStats() {
 }
 
 function createSphere() {
-    const geometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
+    // Création de la géométrie avec subdivision suffisante pour une hitbox précise
+    const geometry = new THREE.SphereGeometry(
+        sphereRadius,  // rayon
+        32,           // segments horizontaux
+        32,           // segments verticaux
+        0,            // phi start
+        Math.PI * 2,  // phi length
+        0,            // theta start
+        Math.PI       // theta length (important pour la couverture complète)
+    );
+    
     const material = new THREE.MeshPhongMaterial({
         color: 0x00ffff,
         shininess: 60,
-        specular: 0x444444
+        specular: 0x444444,
+        // Assure que le matériau n'interfère pas avec le raycasting
+        transparent: false,
+        opacity: 1
     });
-    return new THREE.Mesh(geometry, material);
+
+    const sphere = new THREE.Mesh(geometry, material);
+    
+    // Ajout d'une propriété pour la détection de collision
+    sphere.userData.isTarget = true;
+    
+    return sphere;
 }
 
 function getRandomPosition() {
@@ -938,15 +957,25 @@ function addMonitorDistanceOption() {
 function onMouseClick(event) {
     if (!isPointerLocked || isPaused) return;
 
-    const mouse = new THREE.Vector2(0, 0);
+    // Création d'un vecteur normalisé pour le raycaster
+    const mouse = new THREE.Vector2(0, 0);  // Centre de l'écran
     const raycaster = new THREE.Raycaster();
-
+    
+    // Configuration précise du raycaster
+    raycaster.near = 0.1;
+    raycaster.far = 1000;
+    raycaster.params.Points.threshold = 0.1;
+    
+    // Mise à jour du raycaster avec la position de la caméra
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(spheres);
+
+    // Détection des intersections avec toutes les sphères
+    const intersects = raycaster.intersectObjects(spheres, false);
 
     gameStats.totalShots++;
 
-    if (intersects.length > 0) {
+    // Vérification des collisions
+    if (intersects.length > 0 && intersects[0].object.userData.isTarget) {
         const clickedSphere = intersects[0].object;
         scene.remove(clickedSphere);
         spheres.splice(spheres.indexOf(clickedSphere), 1);
