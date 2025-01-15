@@ -193,7 +193,7 @@ class SensitivityCalculator {
     calculateCM360() {
         const gameConfig = GAME_MULTIPLIERS[this.currentGame];
         if (!gameConfig) return 0;
-        
+
         const cm360 = (360 * 2.54) / (this.sensitivity * gameConfig.yawPerDegree * this.dpi);
         return cm360;
     }
@@ -201,35 +201,35 @@ class SensitivityCalculator {
     calculateThreeJSSensitivity(cm360) {
         const gameConfig = GAME_MULTIPLIERS[this.currentGame];
         if (!gameConfig) return 0;
-        
+
         if (cm360 <= 0 || this.dpi <= 0) {
             console.warn('Invalid cm360 or DPI value');
             return 0;
         }
-    
+
         // 1. Conversion de cm/360 en counts/360
         const countsFor360 = (cm360 / 2.54) * this.dpi;
-        
+
         // 2. Conversion basique en radians par pixel
         const radiansFor360 = Math.PI * 2;
         let radiansPerCount = radiansFor360 / countsFor360;
-        
+
         // 3. Compensation FOV uniquement si nécessaire
         let fovCompensation = 1.0;
         const aspectRatio = window.innerWidth / window.innerHeight;
-        
+
         if (gameConfig.fovType === 'horizontal') {
             const verticalFov = this.convertFovToVertical(this.fov, aspectRatio);
             const defaultVerticalFov = this.convertFovToVertical(gameConfig.defaultFov, aspectRatio);
-            
+
             // Compensation FOV simplifiée
-            fovCompensation = Math.tan((this.fov * Math.PI / 360)) / 
-                             Math.tan((gameConfig.defaultFov * Math.PI / 360));
+            fovCompensation = Math.tan((this.fov * Math.PI / 360)) /
+                Math.tan((gameConfig.defaultFov * Math.PI / 360));
         }
-    
+
         // 4. Facteur de correction pour le jeu
         const gameCorrection = REFERENCE_SETTINGS.correctionFactors[this.currentGame];
-        
+
         // Calcul final simplifié
         return radiansPerCount * fovCompensation * gameCorrection;
     }
@@ -243,7 +243,7 @@ class SensitivityCalculator {
     updateValues(sensitivity, dpi, fov, game = null) {
         this.sensitivity = parseFloat(sensitivity) || this.sensitivity;
         this.dpi = parseFloat(dpi) || this.dpi;
-        
+
         if (game) {
             this.currentGame = game;
             // N'utiliser le FOV par défaut que si aucun FOV personnalisé n'est défini
@@ -251,7 +251,7 @@ class SensitivityCalculator {
                 this.fov = GAME_MULTIPLIERS[game].defaultFov;
             }
         }
-        
+
         if (fov) {
             this.fov = parseFloat(fov);
         }
@@ -262,21 +262,21 @@ function testSensitivityAccuracy() {
     // Configuration initiale (exemple avec Valorant)
     const sensCalc = new SensitivityCalculator();
     sensCalc.updateValues(0.26, 800, 103, 'VALORANT');
-    
+
     // Calculer cm/360
     const cm360 = sensCalc.calculateCM360();
     console.log(`cm/360: ${cm360}`);
-    
+
     // Test physique : déplacer la souris de X pixels et vérifier l'angle
     let totalRotation = 0;
     const pixelsFor360 = (cm360 / 2.54) * sensCalc.dpi;
     console.log(`Pixels nécessaires pour un 360: ${pixelsFor360}`);
-    
+
     // Simuler un mouvement de souris
     const mouseMovement = 100; // pixels
     const expectedRotation = (mouseMovement / pixelsFor360) * 360;
     const actualRotation = (mouseMovement * sensCalc.calculateThreeJSSensitivity(cm360)) * (180 / Math.PI);
-    
+
     console.log(`Rotation attendue: ${expectedRotation}°`);
     console.log(`Rotation actuelle: ${actualRotation}°`);
     console.log(`Différence: ${Math.abs(expectedRotation - actualRotation)}°`);
@@ -316,7 +316,7 @@ class SensitivityProfile {
     exportProfile(name) {
         const profile = this.profiles[name];
         if (!profile) return null;
-        
+
         return btoa(JSON.stringify(profile));
     }
 
@@ -326,7 +326,7 @@ class SensitivityProfile {
             if (!profile.name || !profile.game) {
                 throw new Error('Invalid profile format');
             }
-            
+
             this.profiles[profile.name] = profile;
             this.saveToLocalStorage();
             return profile;
@@ -429,6 +429,14 @@ crosshair.style.left = '50%';
 crosshair.style.pointerEvents = 'none';
 document.body.appendChild(crosshair);
 
+
+let tempSensitivityConfig = {
+    game: defaultSensitivityConfig.game,
+    sensitivity: defaultSensitivityConfig.sensitivity,
+    dpi: defaultSensitivityConfig.dpi,
+    fov: defaultSensitivityConfig.fov
+};
+
 function updateCrosshair() {
     const halfSize = crosshairConfig.size / 2;
     crosshair.innerHTML = `
@@ -519,7 +527,7 @@ function updateCrosshairPreview() {
 
 function addProfileInterface() {
     const profileManager = new SensitivityProfile();
-    
+
     // Récupération des éléments existants
     const profileName = document.getElementById('profileName');
     const profileList = document.getElementById('profileList');
@@ -542,7 +550,7 @@ function addProfileInterface() {
     // Gestionnaire pour la sauvegarde
     saveProfileBtn.addEventListener('click', () => {
         const name = profileManager.sanitizeProfileName(profileName.value);
-        
+
         if (!name) {
             alert('Please enter a valid profile name');
             return;
@@ -660,7 +668,7 @@ function createSphere() {
         0,            // theta start
         Math.PI       // theta length (important pour la couverture complète)
     );
-    
+
     const material = new THREE.MeshPhongMaterial({
         color: 0x00ffff,
         shininess: 60,
@@ -671,10 +679,10 @@ function createSphere() {
     });
 
     const sphere = new THREE.Mesh(geometry, material);
-    
+
     // Ajout d'une propriété pour la détection de collision
     sphere.userData.isTarget = true;
-    
+
     return sphere;
 }
 
@@ -717,9 +725,9 @@ function addNewSphere() {
 }
 
 function isLocked() {
-    return document.pointerLockElement || 
-           document.mozPointerLockElement || 
-           document.webkitPointerLockElement;
+    return document.pointerLockElement ||
+        document.mozPointerLockElement ||
+        document.webkitPointerLockElement;
 }
 
 async function resetGame() {
@@ -731,7 +739,7 @@ async function resetGame() {
     try {
         if (isPointerLocked) {
             const wasLocked = isLocked();
-            
+
             if (wasLocked) {
                 try {
                     await Promise.race([
@@ -744,7 +752,7 @@ async function resetGame() {
                                     setTimeout(checkLock, 50); // Vérifie plus fréquemment
                                 }
                             }
-                            
+
                             if (document.exitPointerLock) {
                                 document.exitPointerLock();
                             } else if (document.mozExitPointerLock) {
@@ -752,7 +760,7 @@ async function resetGame() {
                             } else if (document.webkitExitPointerLock) {
                                 document.webkitExitPointerLock();
                             }
-                            
+
                             checkLock();
                         })
                     ]);
@@ -760,7 +768,7 @@ async function resetGame() {
                     console.warn('Timeout lors de la sortie du Pointer Lock, continuation...');
                 }
             }
-            
+
             // Augmentons le délai d'attente après la sortie du Pointer Lock
             await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -782,10 +790,10 @@ async function resetGame() {
         }
 
         updateStats();
-        
+
         // Attente supplémentaire avant de réactiver les boutons
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
     } catch (error) {
         console.error('Erreur lors du reset du jeu:', error);
         updateStats();
@@ -893,13 +901,13 @@ function calibrateSensitivity() {
     const testDistance = 20; // cm
     let startX = 0;
     let calibrationActive = false;
-    
+
     window.addEventListener('mousedown', () => {
         if (calibrationActive) {
             startX = event.screenX;
         }
     });
-    
+
     window.addEventListener('mouseup', () => {
         if (calibrationActive) {
             const deltaX = Math.abs(event.screenX - startX);
@@ -916,7 +924,7 @@ function addScalingOption() {
     scalingSlider.max = '2.0';
     scalingSlider.step = '0.1';
     scalingSlider.value = '1.0';
-    
+
     scalingSlider.addEventListener('input', (e) => {
         const scale = parseFloat(e.target.value);
         mouseSensitivity *= scale;
@@ -927,11 +935,11 @@ const precisionTest = {
     targetAngle: 180, // degrés
     startRotation: 0,
     tolerance: 5, // degrés
-    
+
     start() {
         this.startRotation = camera.rotation.y;
     },
-    
+
     check() {
         const currentRotation = (camera.rotation.y - this.startRotation) * (180 / Math.PI);
         const difference = Math.abs(currentRotation - this.targetAngle);
@@ -947,7 +955,7 @@ function addMonitorDistanceOption() {
     distanceSlider.max = '70';
     distanceSlider.value = '50';
     distanceSlider.step = '1';
-    
+
     distanceSlider.addEventListener('input', (e) => {
         monitorDistance = parseInt(e.target.value);
         updateDisplay(); // Recalculer la sensibilité
@@ -960,12 +968,12 @@ function onMouseClick(event) {
     // Création d'un vecteur normalisé pour le raycaster
     const mouse = new THREE.Vector2(0, 0);  // Centre de l'écran
     const raycaster = new THREE.Raycaster();
-    
+
     // Configuration précise du raycaster
     raycaster.near = 0.1;
     raycaster.far = 1000;
     raycaster.params.Points.threshold = 0.1;
-    
+
     // Mise à jour du raycaster avec la position de la caméra
     raycaster.setFromCamera(mouse, camera);
 
@@ -1007,18 +1015,18 @@ function setupOptionsMenu() {
         thickness: document.getElementById('thicknessSlider'),
         gap: document.getElementById('gapSlider')
     };
-    
+
     const inputs = {
         size: document.getElementById('sizeInput'),
         thickness: document.getElementById('thicknessInput'),
         gap: document.getElementById('gapInput')
     };
-    
+
     const colorPicker = document.getElementById('colorPicker');
 
     // Initialisation de la calculatrice de sensibilité
     const sensCalc = new SensitivityCalculator();
-    
+
     // Récupération des éléments de sensibilité
     const gameSelector = document.getElementById('gameSelector');
     const sensitivitySlider = document.getElementById('sensitivitySlider');
@@ -1032,18 +1040,18 @@ function setupOptionsMenu() {
         const min = sliders[key].min;
         const max = sliders[key].max;
         const step = sliders[key].step || 1;
-        
+
         let newValue = isNumber ? parseFloat(value) : value;
         newValue = Math.min(Math.max(newValue, parseFloat(min)), parseFloat(max));
-        
+
         if (step !== 1) {
             newValue = Math.round(newValue / step) * step;
         }
-        
+
         sliders[key].value = newValue;
         inputs[key].value = newValue;
         crosshairConfig[key] = newValue;
-        
+
         updateCrosshairPreview();
         updateCrosshair();
     }
@@ -1051,20 +1059,20 @@ function setupOptionsMenu() {
     function updateDisplay() {
         const cm360 = sensCalc.calculateCM360();
         cm360Display.textContent = `${cm360.toFixed(3)} cm/360°`;
-        
+
         // Calculer la sensibilité précise pour Three.js
         mouseSensitivity = sensCalc.calculateThreeJSSensitivity(cm360);
-        
+
         // Convertir le FOV selon le type (horizontal/vertical)
         const verticalFov = sensCalc.convertFovToVertical(
             sensCalc.fov,
             camera.aspect
         );
-        
+
         // Mettre à jour le FOV de la caméra
         camera.fov = verticalFov;
         camera.updateProjectionMatrix();
-        
+
         // Ajuster la position de la caméra en fonction du nouveau FOV
         updateCameraPosition();
     }
@@ -1100,68 +1108,123 @@ function setupOptionsMenu() {
     // Gestion du changement de jeu
     gameSelector.addEventListener('change', () => {
         const selectedGame = gameSelector.value;
-        sensCalc.updateValues(
-            sensInput.value,
-            dpiInput.value,
-            fovInput.value,
-            selectedGame
-        );
-        
-        // Mettre à jour le FOV avec la valeur par défaut du jeu
+        tempSensitivityConfig.game = selectedGame;
+
+        // Mettre à jour le FOV avec la valeur par défaut du jeu seulement dans la preview
         const defaultFov = GAME_MULTIPLIERS[selectedGame].defaultFov;
         fovSlider.value = defaultFov;
         fovInput.value = defaultFov;
-        
+        tempSensitivityConfig.fov = defaultFov;
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
+
         updateDisplay();
     });
 
     // Gestion des événements de sensibilité
     sensitivitySlider.addEventListener('input', () => {
         sensInput.value = sensitivitySlider.value;
-        sensCalc.updateValues(sensitivitySlider.value, dpiInput.value, fovInput.value);
+        tempSensitivityConfig.sensitivity = parseFloat(sensitivitySlider.value);
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
         updateDisplay();
     });
 
     sensInput.addEventListener('input', () => {
         sensitivitySlider.value = sensInput.value;
-        sensCalc.updateValues(sensInput.value, dpiInput.value, fovInput.value);
+        tempSensitivityConfig.sensitivity = parseFloat(sensInput.value);
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
         updateDisplay();
     });
 
     // Gestion des événements de FOV
     fovSlider.addEventListener('input', () => {
         fovInput.value = fovSlider.value;
-        sensCalc.updateValues(sensInput.value, dpiInput.value, fovSlider.value);
+        tempSensitivityConfig.fov = parseFloat(fovSlider.value);
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
         updateDisplay();
     });
 
     fovInput.addEventListener('input', () => {
         fovSlider.value = fovInput.value;
-        sensCalc.updateValues(sensInput.value, dpiInput.value, fovInput.value);
+        tempSensitivityConfig.fov = parseFloat(fovInput.value);
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
         updateDisplay();
     });
 
     // Gestion du DPI
     dpiInput.addEventListener('input', () => {
-        sensCalc.updateValues(sensInput.value, dpiInput.value, fovInput.value);
+        tempSensitivityConfig.dpi = parseFloat(dpiInput.value);
+
+        // Mise à jour temporaire pour la preview
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
         updateDisplay();
     });
 
     // Boutons du menu
     document.getElementById('saveOptionsButton').addEventListener('click', () => {
+        // Sauvegarder les paramètres du crosshair
         Object.keys(crosshairConfig).forEach(key => {
             defaultConfig[key] = crosshairConfig[key];
         });
 
-        defaultSensitivityConfig.game = sensitivityConfig.game;
-        defaultSensitivityConfig.sensitivity = sensitivityConfig.sensitivity;
-        defaultSensitivityConfig.dpi = sensitivityConfig.dpi;
-        defaultSensitivityConfig.fov = sensitivityConfig.fov;
-    
+        // Sauvegarder les paramètres de sensibilité
+        defaultSensitivityConfig.game = tempSensitivityConfig.game;
+        defaultSensitivityConfig.sensitivity = tempSensitivityConfig.sensitivity;
+        defaultSensitivityConfig.dpi = tempSensitivityConfig.dpi;
+        defaultSensitivityConfig.fov = tempSensitivityConfig.fov;
+
+        // Appliquer les changements définitivement
+        sensCalc.updateValues(
+            tempSensitivityConfig.sensitivity,
+            tempSensitivityConfig.dpi,
+            tempSensitivityConfig.fov,
+            tempSensitivityConfig.game
+        );
+
         toggleOptionsMenu();
     });
-    
+
     document.getElementById('backOptionsButton').addEventListener('click', () => {
+        // Restaurer les paramètres du crosshair
         Object.keys(defaultConfig).forEach(key => {
             if (key !== 'color') {
                 sliders[key].value = defaultConfig[key];
@@ -1172,19 +1235,31 @@ function setupOptionsMenu() {
                 crosshairConfig[key] = defaultConfig[key];
             }
         });
-        
+
+        // Restaurer les paramètres de sensibilité temporaires
+        tempSensitivityConfig = {
+            game: defaultSensitivityConfig.game,
+            sensitivity: defaultSensitivityConfig.sensitivity,
+            dpi: defaultSensitivityConfig.dpi,
+            fov: defaultSensitivityConfig.fov
+        };
+
+        // Restaurer les valeurs d'affichage
         gameSelector.value = defaultSensitivityConfig.game;
         sensitivitySlider.value = defaultSensitivityConfig.sensitivity;
         sensInput.value = defaultSensitivityConfig.sensitivity;
         dpiInput.value = defaultSensitivityConfig.dpi;
         fovSlider.value = defaultSensitivityConfig.fov;
         fovInput.value = defaultSensitivityConfig.fov;
-        
-        sensitivityConfig.game = defaultSensitivityConfig.game;
-        sensitivityConfig.sensitivity = defaultSensitivityConfig.sensitivity;
-        sensitivityConfig.dpi = defaultSensitivityConfig.dpi;
-        sensitivityConfig.fov = defaultSensitivityConfig.fov;
-        
+
+        // Restaurer les valeurs réelles
+        sensCalc.updateValues(
+            defaultSensitivityConfig.sensitivity,
+            defaultSensitivityConfig.dpi,
+            defaultSensitivityConfig.fov,
+            defaultSensitivityConfig.game
+        );
+
         updateCrosshairPreview();
         updateCrosshair();
         updateDisplay();
@@ -1220,13 +1295,13 @@ function setupPointerLock() {
     }
 
     // Définition de requestPointerLockWithFallback dans la portée globale
-    window.requestPointerLockWithFallback = function() {
+    window.requestPointerLockWithFallback = function () {
         try {
             // Vérifiez si le document est visible
             if (document.hidden) {
                 return;
             }
-    
+
             // Ajoutez une vérification des permissions pour Chrome
             if ('permissions' in navigator) {
                 navigator.permissions.query({ name: 'pointerLock' })
@@ -1249,8 +1324,8 @@ function setupPointerLock() {
     };
 
     function requestPointerLockWithVendorPrefixes() {
-        if (document.pointerLockElement || 
-            document.mozPointerLockElement || 
+        if (document.pointerLockElement ||
+            document.mozPointerLockElement ||
             document.webkitPointerLockElement) {
             // Déjà verrouillé
             return;
@@ -1284,10 +1359,10 @@ function setupPointerLock() {
         const lockElement = document.pointerLockElement ||
             document.mozPointerLockElement ||
             document.webkitPointerLockElement;
-    
+
         const wasLocked = isPointerLocked;
         isPointerLocked = lockElement === element;
-    
+
         // Gestion spéciale pour Chrome/Safari qui peuvent perdre le lock lors du changement d'onglet
         if (wasLocked && !isPointerLocked) {
             if (document.hidden) {
@@ -1308,15 +1383,15 @@ function setupPointerLock() {
     function handlePointerLockError(e) {
         console.error('Erreur Pointer Lock:', e);
         isPointerLocked = false;
-        
+
         if (!isPaused) {
             togglePause();
         }
-        
+
         if (!(e instanceof SecurityError)) {
             let retryCount = 0;
             const maxRetries = 3;
-            
+
             function attemptRetry() {
                 if (retryCount < maxRetries) {
                     retryCount++;
@@ -1328,7 +1403,7 @@ function setupPointerLock() {
                     }, 1000 * retryCount); // Délai croissant entre les tentatives
                 }
             }
-            
+
             attemptRetry();
         }
     }
@@ -1337,7 +1412,7 @@ function setupPointerLock() {
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     document.addEventListener('mozpointerlockchange', handlePointerLockChange);
     document.addEventListener('webkitpointerlockchange', handlePointerLockChange);
-    
+
     document.addEventListener('pointerlockerror', handlePointerLockError);
     document.addEventListener('mozpointerlockerror', handlePointerLockError);
     document.addEventListener('webkitpointerlockerror', handlePointerLockError);
@@ -1493,13 +1568,13 @@ function disableButton(buttonId) {
     const button = document.getElementById(buttonId);
     if (button) {
         const originalText = button.textContent;
-        
+
         // Désactivation du bouton
         button.classList.add('disabled');
         button.style.pointerEvents = 'none';
         button.style.opacity = '0.5';
         button.style.cursor = 'not-allowed';
-        
+
         // Sécurité pour s'assurer que le texte reste intact
         setTimeout(() => {
             if (button.classList.contains('disabled')) {
