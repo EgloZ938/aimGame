@@ -258,6 +258,8 @@ class SensitivityCalculator {
     }
 }
 
+let globalSensCalc = new SensitivityCalculator();
+
 function testSensitivityAccuracy() {
     // Configuration initiale (exemple avec Valorant)
     const sensCalc = new SensitivityCalculator();
@@ -290,12 +292,19 @@ class SensitivityProfile {
     saveProfile(name, config) {
         const profile = {
             name,
+            // Paramètres de sensibilité
             game: config.game,
             sensitivity: config.sensitivity,
             dpi: config.dpi,
             fov: config.fov,
             monitorDistance: REFERENCE_SETTINGS.distance,
-            crosshair: { ...crosshairConfig },
+            // Paramètres du crosshair
+            crosshair: {
+                size: crosshairConfig.size,
+                color: crosshairConfig.color,
+                thickness: crosshairConfig.thickness,
+                gap: crosshairConfig.gap
+            },
             timestamp: Date.now()
         };
 
@@ -308,8 +317,77 @@ class SensitivityProfile {
         const profile = this.profiles[name];
         if (!profile) return null;
 
+        // Charger les paramètres de distance
         REFERENCE_SETTINGS.distance = profile.monitorDistance || 50;
-        Object.assign(crosshairConfig, profile.crosshair);
+
+        // Charger les paramètres du crosshair
+        if (profile.crosshair) {
+            Object.assign(crosshairConfig, profile.crosshair);
+            // Mettre à jour l'interface du crosshair
+            const colorPicker = document.getElementById('colorPicker');
+            const sliders = {
+                size: document.getElementById('sizeSlider'),
+                thickness: document.getElementById('thicknessSlider'),
+                gap: document.getElementById('gapSlider')
+            };
+            const inputs = {
+                size: document.getElementById('sizeInput'),
+                thickness: document.getElementById('thicknessInput'),
+                gap: document.getElementById('gapInput')
+            };
+
+            // Mettre à jour tous les contrôles
+            if (colorPicker) colorPicker.value = profile.crosshair.color;
+            Object.keys(sliders).forEach(key => {
+                if (sliders[key]) sliders[key].value = profile.crosshair[key];
+                if (inputs[key]) inputs[key].value = profile.crosshair[key];
+            });
+        }
+
+        // Mise à jour des valeurs d'entrée et des sliders
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const fovSlider = document.getElementById('fovSlider');
+        const sensitivityInput = document.getElementById('gameSensitivity');
+        const fovInput = document.getElementById('fovInput');
+
+        if (sensitivitySlider && sensitivityInput) {
+            sensitivitySlider.value = profile.sensitivity;
+            sensitivityInput.value = profile.sensitivity;
+        }
+
+        if (fovSlider && fovInput) {
+            fovSlider.value = profile.fov;
+            fovInput.value = profile.fov;
+        }
+
+        // Mise à jour de la configuration de sensibilité
+        tempSensitivityConfig = {
+            game: profile.game,
+            sensitivity: profile.sensitivity,
+            dpi: profile.dpi,
+            fov: profile.fov
+        };
+
+        // Mise à jour des valeurs par défaut
+        defaultSensitivityConfig.game = profile.game;
+        defaultSensitivityConfig.sensitivity = profile.sensitivity;
+        defaultSensitivityConfig.dpi = profile.dpi;
+        defaultSensitivityConfig.fov = profile.fov;
+
+        // Mise à jour du calculator
+        globalSensCalc.updateValues(
+            profile.sensitivity,
+            profile.dpi,
+            profile.fov,
+            profile.game
+        );
+
+        // Mise à jour de la sensibilité effective du jeu
+        const cm360 = globalSensCalc.calculateCM360();
+        mouseSensitivity = globalSensCalc.calculateThreeJSSensitivity(cm360);
+
+        updateCrosshair();
+        updateCrosshairPreview();
         return profile;
     }
 
@@ -355,6 +433,7 @@ class SensitivityProfile {
     }
 
     validateProfile(profile) {
+        // Validation des champs de sensibilité
         const requiredFields = ['name', 'game', 'sensitivity', 'dpi', 'fov'];
         const isValid = requiredFields.every(field => {
             if (field === 'name') return typeof profile[field] === 'string' && profile[field].length > 0;
@@ -363,6 +442,17 @@ class SensitivityProfile {
         });
 
         if (!isValid) throw new Error('Invalid profile format');
+
+        // Validation des champs du crosshair
+        if (profile.crosshair) {
+            const requiredCrosshairFields = ['size', 'color', 'thickness', 'gap'];
+            const isCrosshairValid = requiredCrosshairFields.every(field => {
+                if (field === 'color') return typeof profile.crosshair[field] === 'string';
+                return typeof profile.crosshair[field] === 'number' && !isNaN(profile.crosshair[field]);
+            });
+            if (!isCrosshairValid) throw new Error('Invalid crosshair format');
+        }
+
         return true;
     }
 
@@ -884,9 +974,12 @@ function handleMouseMove(event) {
     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
     const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-    // Appliquer la sensibilité avec une précision accrue
-    rotationY -= movementX * mouseSensitivity;
-    rotationX -= movementY * mouseSensitivity;
+    // Calculer le facteur de correction DPI (par rapport à la base de 800 DPI)
+    const dpiScaling = globalSensCalc.dpi / 800;
+
+    // Appliquer la sensibilité avec une précision accrue, en tenant compte du DPI
+    rotationY -= movementX * mouseSensitivity * dpiScaling;
+    rotationX -= movementY * mouseSensitivity * dpiScaling;
 
     // Limiter la rotation verticale à 90 degrés
     rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
@@ -1025,7 +1118,7 @@ function setupOptionsMenu() {
     const colorPicker = document.getElementById('colorPicker');
 
     // Initialisation de la calculatrice de sensibilité
-    const sensCalc = new SensitivityCalculator();
+    const sensCalc = globalSensCalc;
 
     // Récupération des éléments de sensibilité
     const gameSelector = document.getElementById('gameSelector');
