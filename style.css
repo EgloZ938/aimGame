@@ -531,3 +531,17 @@ canvas {
         0 10px
     );
 }
+
+#setFavoriteProfile {
+    background: linear-gradient(90deg, rgba(255,215,0,0.1) 0%, rgba(255,215,0,0.05) 100%);
+}
+
+#setFavoriteProfile:hover {
+    background: linear-gradient(90deg, rgba(255,215,0,0.2) 0%, rgba(255,215,0,0.1) 100%);
+}
+
+/* Style pour l'étoile du profil favori */
+.profile-select option[data-favorite="true"]::after {
+    content: " ★";
+    color: gold;
+}

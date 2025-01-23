@@ -287,6 +287,7 @@ function testSensitivityAccuracy() {
 class SensitivityProfile {
     constructor() {
         this.profiles = this.loadProfiles();
+        this.favoriteProfile = localStorage.getItem('favoriteProfile');
     }
 
     saveProfile(name, config) {
@@ -305,6 +306,7 @@ class SensitivityProfile {
                 thickness: crosshairConfig.thickness,
                 gap: crosshairConfig.gap
             },
+            isFavorite: false,
             timestamp: Date.now()
         };
 
@@ -422,6 +424,31 @@ class SensitivityProfile {
             console.error('Error loading profiles:', error);
             return {};
         }
+    }
+
+    setFavorite(name) {
+        if (!this.profiles[name]) return false;
+
+        // Retire le statut favori de tous les profils
+        Object.keys(this.profiles).forEach(profileName => {
+            this.profiles[profileName].isFavorite = false;
+        });
+
+        // Définit le nouveau favori
+        this.profiles[name].isFavorite = true;
+        this.favoriteProfile = name;
+
+        // Sauvegarde dans le localStorage
+        localStorage.setItem('favoriteProfile', name);
+        this.saveToLocalStorage();
+        return true;
+    }
+
+    loadFavoriteProfile() {
+        if (this.favoriteProfile && this.profiles[this.favoriteProfile]) {
+            return this.loadProfile(this.favoriteProfile);
+        }
+        return null;
     }
 
     saveToLocalStorage() {
@@ -626,13 +653,19 @@ function addProfileInterface() {
     const exportProfileBtn = document.getElementById('exportProfile');
     const importProfileBtn = document.getElementById('importProfile');
     const deleteProfileBtn = document.getElementById('deleteProfile');
+    const setFavoriteBtn = document.getElementById('setFavoriteProfile');
 
     function updateProfileList() {
+        const profileList = document.getElementById('profileList');
         profileList.innerHTML = '';
+
         Object.keys(profileManager.profiles).forEach(name => {
             const option = document.createElement('option');
             option.value = name;
             option.textContent = name;
+            if (profileManager.profiles[name].isFavorite) {
+                option.textContent += ' ★';
+            }
             profileList.appendChild(option);
         });
     }
@@ -715,6 +748,15 @@ function addProfileInterface() {
                 updateProfileList();
                 profileName.value = '';
             }
+        }
+    });
+
+    // Gestionnaire pour le bouton "Set as Favorite"
+    setFavoriteBtn.addEventListener('click', () => {
+        const selectedProfile = profileList.value;
+        if (selectedProfile) {
+            profileManager.setFavorite(selectedProfile);
+            updateProfileList(); // Met à jour la liste pour afficher l'étoile
         }
     });
 
@@ -1690,6 +1732,14 @@ function enableButton(buttonId) {
 function init() {
     setupPointerLock();
     setupOptionsMenu();
+
+    const profileManager = new SensitivityProfile();
+
+    const favoriteProfile = profileManager.loadFavoriteProfile();
+    if (favoriteProfile) {
+        profileManager.loadProfile(favoriteProfile.name);
+    }
+
     setupEventListeners();
     addProfileInterface();
     addExtraEventListeners();
