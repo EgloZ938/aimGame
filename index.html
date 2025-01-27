@@ -1,165 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game</title>
-    <link href="./style.css" rel="stylesheet">
+    <title>AimLab Clone - Home</title>
+    <link rel="stylesheet" href="./style/accueil.css">
 </head>
+
 <body>
-    <div class="ui-container">
-        <div class="stats-container">
-            <div class="stat-section">
-                <div class="stat-content">
-                    <div class="stat-value" id="score">0</div>
-                    <div class="stat-label">Score</div>
+    <!-- Boutons de navigation -->
+    <div class="nav-buttons">
+        <button id="loginButton" class="nav-button">Login</button>
+        <button id="registerButton" class="nav-button">Register</button>
+    </div>
+
+    <!-- Modal de connexion -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <button class="close-button">&times;</button>
+            <h2 class="modal-title">Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" class="form-input" required>
                 </div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-section timer">
-                <div class="stat-content">
-                    <div class="stat-value" id="timer">1:00</div>
-                    <div class="stat-label">Time</div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" required>
                 </div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-section">
-                <div class="stat-content">
-                    <div class="stat-value" id="accuracy">0%</div>
-                    <div class="stat-label">Accuracy</div>
-                </div>
+                <button type="submit" class="form-button login-button">Login</button>
+            </form>
+            <div class="switch-form">
+                Don't have an account? <a id="switchToRegister">Register here</a>
             </div>
         </div>
     </div>
 
-    <div id="pauseMenu" class="pause-menu hidden">
-        <div class="pause-content">
-            <h2>PAUSE</h2>
-            <div class="menu-buttons">
-                <button id="resumeButton" class="menu-button">REPRENDRE</button>
-                <button id="restartButton" class="menu-button">RECOMMENCER</button>
-                <button id="optionsButton" class="menu-button">OPTIONS</button>
-                <button id="quitButton" class="menu-button">QUITTER</button>
+    <!-- Modal d'inscription -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <button class="close-button">&times;</button>
+            <h2 class="modal-title">Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-input" required>
+                </div>
+                <button type="submit" class="form-button register-button">Register</button>
+            </form>
+            <div class="switch-form">
+                Already have an account? <a id="switchToLogin">Login here</a>
             </div>
         </div>
     </div>
 
-    <div id="optionsMenu" class="pause-menu hidden">
-        <div class="pause-content options-content">
-            <h2>OPTIONS</h2>
-
-            <div class="options-scroll-area">
-                <!-- Section Crosshair -->
-                <div class="crosshair-section">
-                    <div class="preview-box">
-                        <div id="crosshairPreview"></div>
-                    </div>
-                    <div class="options-controls">
-                        <div class="option-row">
-                            <label>Taille</label>
-                            <input type="range" id="sizeSlider" min="0" max="20" value="5">
-                            <input type="number" id="sizeInput" min="0" max="20" value="5" class="number-input">
-                        </div>
-                        <div class="option-row">
-                            <label>Épaisseur</label>
-                            <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
-                            <input type="number" id="thicknessInput" min="1" max="5" value="2" step="0.5" class="number-input">
-                        </div>
-                        <div class="option-row">
-                            <label>Espacement</label>
-                            <input type="range" id="gapSlider" min="0" max="10" value="2">
-                            <input type="number" id="gapInput" min="0" max="10" value="2" class="number-input">
-                        </div>
-                        <div class="option-row">
-                            <label>Couleur</label>
-                            <input type="color" id="colorPicker" value="#00ff00">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Section Sensitivity -->
-                <div class="sensitivity-section">
-                    <h3 class="section-title">Sensitivity Calculator</h3>
-                    <div class="sensitivity-controls">
-                        <div class="option-row">
-                            <label>Game</label>
-                            <select id="gameSelector" class="game-select">
-                                <option value="VALORANT">Valorant</option>
-                                <option value="CSGO">CS2 (CS:GO)</option>
-                                <option value="APEX">Apex Legends</option>
-                                <option value="OVERWATCH">Overwatch 2</option>
-                                <option value="FORTNITE">Fortnite</option>
-                                <option value="R6">Rainbow Six Siege</option>
-                                <option value="COD">Call of Duty</option>
-                                <option value="BF">Battlefield</option>
-                                <option value="QUAKE">Quake Champions</option>
-                                <option value="DOOM">DOOM Eternal</option>
-                                <option value="DESTINY2">Destiny 2</option>
-                                <option value="PUBG">PUBG: BATTLEGROUNDS</option>
-                                <option value="SPLITGATE">Splitgate</option>
-                                <option value="PALADINS">Paladins</option>
-                                <option value="DIABOTICAL">Diabotical</option>
-                                <option value="HALO">Halo Infinite</option>
-                                <option value="WARFRAME">Warframe</option>
-                                <option value="RUST">Rust</option>
-                            </select>
-                        </div>
-                        <div class="option-row">
-                            <label>Game Sensitivity</label>
-                            <input type="range" id="sensitivitySlider" min="0.001" max="10" step="0.001" value="0.26" class="sensitivity-slider">
-                            <input type="number" id="gameSensitivity" class="number-input" value="0.26" step="0.001" min="0.001">
-                        </div>
-                        <div class="option-row">
-                            <label>Mouse DPI</label>
-                            <input type="number" id="mouseDPI" class="number-input" value="800" step="50" min="50">
-                        </div>
-                        <div class="option-row">
-                            <label>FOV</label>
-                            <input type="range" id="fovSlider" min="60" max="120" step="1" value="103" class="fov-slider">
-                            <input type="number" id="fovInput" class="number-input" value="103" min="60" max="120">
-                        </div>
-                        <div class="calculated-value">
-                            <span id="cm360Value">0.00 cm/360°</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section Profile -->
-                <div class="profile-section">
-                    <h3>Profiles</h3>
-                    <div class="profile-controls">
-                        <input type="text" id="profileName" placeholder="Profile name">
-                        <select id="profileList" class="profile-select"></select>
-                        <div class="button-group">
-                            <button id="saveProfile" class="menu-button">Save</button>
-                            <button id="loadProfile" class="menu-button">Load</button>
-                            <button id="deleteProfile" class="menu-button">Delete</button>
-                        </div>
-                        <div class="button-group">
-                            <button id="exportProfile" class="menu-button">Export</button>
-                            <button id="importProfile" class="menu-button">Import</button>
-                        </div>
-                        <div class="button-group">
-                            <button id="setFavoriteProfile" class="menu-button">Set as Favorite</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="menu-buttons">
-                <button id="saveOptionsButton" class="menu-button">SAUVEGARDER</button>
-                <button id="backOptionsButton" class="menu-button">RETOUR</button>
-            </div>
-        </div>
+    <div class="logo-container">
+        <div class="logo">AIMGAME</div>
+        <div class="subtitle">Train your aim, improve your game</div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+    <div class="menu-container">
+        <button id="playButton" class="menu-button">PLAY</button>
+        <button id="leaderboardButton" class="menu-button">LEADERBOARD</button>
+        <button id="optionsButton" class="menu-button">OPTIONS</button>
+        <button id="quitButton" class="menu-button">QUIT</button>
+    </div>
+
+    <script>
+        document.getElementById('playButton').addEventListener('click', () => {
+            window.location.href = 'game.html';
+        });
+
+        document.getElementById('leaderboardButton').addEventListener('click', () => {
+            // À implémenter
+            alert('Leaderboard coming soon!');
+        });
+
+        document.getElementById('optionsButton').addEventListener('click', () => {
+            // À implémenter
+            alert('Options coming soon!');
+        });
+
+        document.getElementById('quitButton').addEventListener('click', () => {
+            window.close();
+            // Fallback si window.close() ne fonctionne pas
+            if (!window.closed) {
+                window.location.href = "about:blank";
             }
+        });
+
+        // Gestion des modals
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        const loginButton = document.getElementById('loginButton');
+        const registerButton = document.getElementById('registerButton');
+        const closeButtons = document.querySelectorAll('.close-button');
+        const switchToRegister = document.getElementById('switchToRegister');
+        const switchToLogin = document.getElementById('switchToLogin');
+
+        function showModal(modal) {
+            modal.classList.add('active');
         }
+
+        function hideModal(modal) {
+            modal.classList.remove('active');
+        }
+
+        function hideAllModals() {
+            loginModal.classList.remove('active');
+            registerModal.classList.remove('active');
+        }
+
+        loginButton.addEventListener('click', () => showModal(loginModal));
+        registerButton.addEventListener('click', () => showModal(registerModal));
+
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => hideAllModals());
+        });
+
+        switchToRegister.addEventListener('click', () => {
+            hideModal(loginModal);
+            showModal(registerModal);
+        });
+
+        switchToLogin.addEventListener('click', () => {
+            hideModal(registerModal);
+            showModal(loginModal);
+        });
+
+        // Fermer les modals en cliquant à l'extérieur
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                hideAllModals();
+            }
+        });
+
+        // Gestion des formulaires
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Logique de connexion à implémenter
+            console.log('Login submitted');
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Logique d'inscription à implémenter
+            console.log('Register submitted');
+        });
     </script>
-    <script type="module" src="game.js"></script>
 </body>
+
 </html>

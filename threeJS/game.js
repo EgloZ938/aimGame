@@ -6,6 +6,7 @@ const gameStats = {
     score: 0,
     timeLeft: 60,
     accuracy: 0,
+    bestStreak: 0,
     streak: 0,
     multiplier: 1,
     basePoints: 100,
@@ -497,6 +498,165 @@ class SensitivityProfile {
     }
 }
 
+class GameHistory {
+    constructor() {
+        this.loadHistory();
+    }
+
+    loadHistory() {
+        this.history = JSON.parse(localStorage.getItem('gameHistory')) || [];
+        this.highScore = this.history.length > 0
+            ? Math.max(...this.history.map(game => game.score))
+            : 0;
+    }
+
+    saveGame(gameStats) {
+        const gameResult = {
+            timestamp: Date.now(),
+            score: gameStats.score,
+            accuracy: Math.round((gameStats.hits / gameStats.totalShots) * 100),
+            hits: gameStats.hits,
+            totalShots: gameStats.totalShots,
+            streak: gameStats.bestStreak
+        };
+
+        this.history.push(gameResult);
+        // Garder seulement les 10 dernières parties
+        if (this.history.length > 10) {
+            this.history = this.history.slice(-10);
+        }
+
+        this.highScore = Math.max(this.highScore, gameResult.score);
+        localStorage.setItem('gameHistory', JSON.stringify(this.history));
+    }
+}
+
+// Création de l'instance du gestionnaire d'historique
+const gameHistory = new GameHistory();
+
+function showGameOverModal(stats) {
+    // Sauvegarder le résultat
+    gameHistory.saveGame(stats);
+
+    // Mettre à jour les statistiques dans le modal
+    document.getElementById('finalScore').textContent = stats.score;
+    document.getElementById('highScore').textContent = gameHistory.highScore;
+    document.getElementById('finalAccuracy').textContent = `${Math.round((stats.hits / stats.totalShots) * 100)}%`;
+    document.getElementById('finalHits').textContent = stats.hits;
+    document.getElementById('finalShots').textContent = stats.totalShots;
+    document.getElementById('finalStreak').textContent = stats.bestStreak;
+
+    if (document.exitPointerLock) {
+        document.exitPointerLock();
+    } else if (document.mozExitPointerLock) {
+        document.mozExitPointerLock();
+    } else if (document.webkitExitPointerLock) {
+        document.webkitExitPointerLock();
+    }
+
+    // Créer le graphique
+    createPerformanceChart();
+
+    // S'assurer que le modal est caché au début
+    const modal = document.getElementById('gameOverModal');
+    modal.classList.remove('hidden');
+
+    // Configuration des boutons
+    document.getElementById('restartGameButton').onclick = async () => {
+        modal.classList.add('hidden');
+        await resetGame();
+        isPaused = false;  // S'assurer que le jeu n'est plus en pause
+        // Ne pas appeler togglePause() ici car nous voulons juste démarrer le jeu
+    };
+
+    document.getElementById('quitGameButton').onclick = () => {
+        window.location.href = './';
+    };
+}
+
+function createPerformanceChart() {
+    const chartContainer = document.getElementById('scoreChart');
+    chartContainer.innerHTML = ''; // Nettoyer le conteneur
+
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    chartContainer.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+
+    const data = gameHistory.history.map((game, index) => ({
+        x: `Game ${index + 1}`,
+        score: game.score,
+        accuracy: game.accuracy
+    }));
+
+    const chartData = {
+        labels: data.map(d => d.x),
+        datasets: [
+            {
+                label: 'Score',
+                data: data.map(d => d.score),
+                borderColor: '#4488ff',
+                backgroundColor: 'rgba(68, 136, 255, 0.1)',
+                tension: 0.3,
+                fill: true
+            }
+        ]
+    };
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false  // Cache la légende
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const gameIndex = context.dataIndex;
+                            const game = data[gameIndex];
+                            return [
+                                `Score: ${game.score}`,
+                                `Accuracy: ${game.accuracy}%`
+                            ];
+                        }
+                    },
+                    backgroundColor: '#1a1a3a',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1
+                }
+            }
+        }
+    });
+}
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -863,6 +1023,7 @@ function isLocked() {
 }
 
 async function resetGame() {
+    document.getElementById('gameOverModal').classList.add('hidden');
     // Désactiver les boutons pendant le reset
     disableButton('restartButton');
     disableButton('resumeButton');
@@ -912,6 +1073,7 @@ async function resetGame() {
         gameStats.timeLeft = 60;
         gameStats.accuracy = 0;
         gameStats.streak = 0;
+        gameStats.bestStreak = 0;
         gameStats.multiplier = 1;
 
         spheres.forEach(sphere => scene.remove(sphere));
@@ -1126,6 +1288,7 @@ function onMouseClick(event) {
 
         gameStats.hits++;
         gameStats.streak++;
+        gameStats.bestStreak = Math.max(gameStats.bestStreak, gameStats.streak);
         gameStats.score += calculateScore();
     } else {
         gameStats.streak = 0;
@@ -1664,7 +1827,7 @@ function setupEventListeners() {
 
     document.getElementById('quitButton').addEventListener('click', () => {
         if (confirm("Voulez-vous vraiment quitter ?")) {
-            window.location.reload();
+            window.location.href = './';
         }
     });
 }
@@ -1676,8 +1839,8 @@ function startTimer() {
             updateStats();
 
             if (gameStats.timeLeft === 0) {
-                togglePause();
-                alert(`Game Over!\nScore final: ${gameStats.score}\nPrécision: ${Math.round((gameStats.hits / gameStats.totalShots) * 100)}%`);
+                isPaused = true;
+                showGameOverModal(gameStats);
             }
         }
     }, 1000);

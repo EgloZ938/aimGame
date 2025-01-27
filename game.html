@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <link href="./style/game.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="ui-container">
+        <div class="stats-container">
+            <div class="stat-section">
+                <div class="stat-content">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-section timer">
+                <div class="stat-content">
+                    <div class="stat-value" id="timer">1:00</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-section">
+                <div class="stat-content">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pauseMenu" class="pause-menu hidden">
+        <div class="pause-content">
+            <h2>PAUSE</h2>
+            <div class="menu-buttons">
+                <button id="resumeButton" class="menu-button">REPRENDRE</button>
+                <button id="restartButton" class="menu-button">RECOMMENCER</button>
+                <button id="optionsButton" class="menu-button">OPTIONS</button>
+                <button id="quitButton" class="menu-button">QUITTER</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="optionsMenu" class="pause-menu hidden">
+        <div class="pause-content options-content">
+            <h2>OPTIONS</h2>
+
+            <div class="options-scroll-area">
+                <!-- Section Crosshair -->
+                <div class="crosshair-section">
+                    <div class="preview-box">
+                        <div id="crosshairPreview"></div>
+                    </div>
+                    <div class="options-controls">
+                        <div class="option-row">
+                            <label>Taille</label>
+                            <input type="range" id="sizeSlider" min="0" max="20" value="5">
+                            <input type="number" id="sizeInput" min="0" max="20" value="5" class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Épaisseur</label>
+                            <input type="range" id="thicknessSlider" min="1" max="5" value="2" step="0.5">
+                            <input type="number" id="thicknessInput" min="1" max="5" value="2" step="0.5"
+                                class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Espacement</label>
+                            <input type="range" id="gapSlider" min="0" max="10" value="2">
+                            <input type="number" id="gapInput" min="0" max="10" value="2" class="number-input">
+                        </div>
+                        <div class="option-row">
+                            <label>Couleur</label>
+                            <input type="color" id="colorPicker" value="#00ff00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Sensitivity -->
+                <div class="sensitivity-section">
+                    <h3 class="section-title">Sensitivity Calculator</h3>
+                    <div class="sensitivity-controls">
+                        <div class="option-row">
+                            <label>Game</label>
+                            <select id="gameSelector" class="game-select">
+                                <option value="VALORANT">Valorant</option>
+                                <option value="CSGO">CS2 (CS:GO)</option>
+                                <option value="APEX">Apex Legends</option>
+                                <option value="OVERWATCH">Overwatch 2</option>
+                                <option value="FORTNITE">Fortnite</option>
+                                <option value="R6">Rainbow Six Siege</option>
+                                <option value="COD">Call of Duty</option>
+                                <option value="BF">Battlefield</option>
+                                <option value="QUAKE">Quake Champions</option>
+                                <option value="DOOM">DOOM Eternal</option>
+                                <option value="DESTINY2">Destiny 2</option>
+                                <option value="PUBG">PUBG: BATTLEGROUNDS</option>
+                                <option value="SPLITGATE">Splitgate</option>
+                                <option value="PALADINS">Paladins</option>
+                                <option value="DIABOTICAL">Diabotical</option>
+                                <option value="HALO">Halo Infinite</option>
+                                <option value="WARFRAME">Warframe</option>
+                                <option value="RUST">Rust</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label>Game Sensitivity</label>
+                            <input type="range" id="sensitivitySlider" min="0.001" max="10" step="0.001" value="0.26"
+                                class="sensitivity-slider">
+                            <input type="number" id="gameSensitivity" class="number-input" value="0.26" step="0.001"
+                                min="0.001">
+                        </div>
+                        <div class="option-row">
+                            <label>Mouse DPI</label>
+                            <input type="number" id="mouseDPI" class="number-input" value="800" step="50" min="50">
+                        </div>
+                        <div class="option-row">
+                            <label>FOV</label>
+                            <input type="range" id="fovSlider" min="60" max="120" step="1" value="103"
+                                class="fov-slider">
+                            <input type="number" id="fovInput" class="number-input" value="103" min="60" max="120">
+                        </div>
+                        <div class="calculated-value">
+                            <span id="cm360Value">0.00 cm/360°</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Profile -->
+                <div class="profile-section">
+                    <h3>Profiles</h3>
+                    <div class="profile-controls">
+                        <input type="text" id="profileName" placeholder="Profile name">
+                        <select id="profileList" class="profile-select"></select>
+                        <div class="button-group">
+                            <button id="saveProfile" class="menu-button">Save</button>
+                            <button id="loadProfile" class="menu-button">Load</button>
+                            <button id="deleteProfile" class="menu-button">Delete</button>
+                        </div>
+                        <div class="button-group">
+                            <button id="exportProfile" class="menu-button">Export</button>
+                            <button id="importProfile" class="menu-button">Import</button>
+                        </div>
+                        <div class="button-group">
+                            <button id="setFavoriteProfile" class="menu-button">Set as Favorite</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-buttons">
+                <button id="saveOptionsButton" class="menu-button">SAUVEGARDER</button>
+                <button id="backOptionsButton" class="menu-button">RETOUR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Game Over -->
+    <div id="gameOverModal" class="game-over-modal hidden">
+        <div class="game-over-content">
+            <h2>Game Over!</h2>
+
+            <!-- Performance Summary -->
+            <div class="performance-summary">
+                <div class="score-container">
+                    <div class="current-score">
+                        <h3>Current Score</h3>
+                        <div class="score-value" id="finalScore">0</div>
+                    </div>
+                    <div class="high-score">
+                        <h3>High Score</h3>
+                        <div class="score-value" id="highScore">0</div>
+                    </div>
+                </div>
+
+                <!-- Detailed Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Accuracy</div>
+                        <div class="stat-value" id="finalAccuracy">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Total Hits</div>
+                        <div class="stat-value" id="finalHits">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Total Shots</div>
+                        <div class="stat-value" id="finalShots">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Best Streak</div>
+                        <div class="stat-value" id="finalStreak">0</div>
+                    </div>
+                </div>
+
+                <!-- Performance Graph -->
+                <div class="performance-graph">
+                    <h3>Performance History</h3>
+                    <div id="scoreChart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="game-over-buttons">
+                <button id="restartGameButton" class="menu-button">Play Again</button>
+                <button id="quitGameButton" class="menu-button">Quit</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom": "https://esm.sh/react-dom@18.2.0",
+                "recharts": "https://esm.sh/recharts@2.12.0"
+            }
+        }
+    </script>
+    <script type="module" src="./threeJS/game.js"></script>
+</body>
+
+</html>
