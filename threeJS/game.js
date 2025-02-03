@@ -15,19 +15,16 @@ const gameStats = {
     missPenalty: 50
 };
 
-const crosshairConfig = {
+const defaultCrosshairConfig = {
     size: 5,
     color: '#ffffff',
     thickness: 2,
     gap: 3
 };
 
-const defaultConfig = {
-    size: 5,
-    color: '#ffffff',
-    thickness: 2,
-    gap: 3
-};
+const crosshairConfig = JSON.parse(localStorage.getItem('crosshairConfig')) || { ...defaultCrosshairConfig };
+
+const defaultConfig = { ...crosshairConfig };
 
 const GAME_MULTIPLIERS = {
     VALORANT: {
@@ -1382,6 +1379,14 @@ function setupOptionsMenu() {
             tempSensitivityConfig.game
         );
 
+        // Sauvegarder dans le localStorage
+        localStorage.setItem('sensitivityConfig', JSON.stringify({
+            game: gameSelector.value,
+            sensitivity: sensitivityInput.value,
+            dpi: dpiInput.value,
+            fov: fovInput.value
+        }));
+
         updateDisplay();
     });
 
@@ -1464,11 +1469,22 @@ function setupOptionsMenu() {
             defaultConfig[key] = crosshairConfig[key];
         });
 
+        // Sauvegarder dans le localStorage
+        localStorage.setItem('crosshairConfig', JSON.stringify(crosshairConfig));
+
         // Sauvegarder les paramètres de sensibilité
         defaultSensitivityConfig.game = tempSensitivityConfig.game;
         defaultSensitivityConfig.sensitivity = tempSensitivityConfig.sensitivity;
         defaultSensitivityConfig.dpi = tempSensitivityConfig.dpi;
         defaultSensitivityConfig.fov = tempSensitivityConfig.fov;
+
+        // Sauvegarder la sensibilité dans le localStorage
+        localStorage.setItem('sensitivityConfig', JSON.stringify({
+            game: tempSensitivityConfig.game,
+            sensitivity: tempSensitivityConfig.sensitivity,
+            dpi: tempSensitivityConfig.dpi,
+            fov: tempSensitivityConfig.fov
+        }));
 
         // Appliquer les changements définitivement
         sensCalc.updateValues(
@@ -1530,6 +1546,87 @@ function setupOptionsMenu() {
     });
     colorPicker.value = crosshairConfig.color;
     updateDisplay();
+}
+
+function loadSavedSettings() {
+    // Charger les paramètres du crosshair
+    const savedCrosshair = localStorage.getItem('crosshairConfig');
+    if (savedCrosshair) {
+        Object.assign(crosshairConfig, JSON.parse(savedCrosshair));
+        const configCrosshair = JSON.parse(savedCrosshair);
+
+        // Mettre à jour les configurations par défaut du crosshair
+        Object.assign(defaultConfig, configCrosshair);
+        Object.assign(crosshairConfig, configCrosshair);
+
+        // Mettre à jour les éléments UI
+        document.getElementById('sizeSlider').value = configCrosshair.size;
+        document.getElementById('sizeInput').value = configCrosshair.size;
+        document.getElementById('thicknessSlider').value = configCrosshair.thickness;
+        document.getElementById('thicknessInput').value = configCrosshair.thickness;
+        document.getElementById('gapSlider').value = configCrosshair.gap;
+        document.getElementById('gapInput').value = configCrosshair.gap;
+        document.getElementById('colorPicker').value = configCrosshair.color;
+
+        updateCrosshair();
+        updateCrosshairPreview();
+    }
+
+    // Charger les paramètres de sensibilité
+    const savedSensitivity = localStorage.getItem('sensitivityConfig');
+    if (savedSensitivity) {
+        const config = JSON.parse(savedSensitivity);
+
+        // Mettre à jour les éléments UI
+        document.getElementById('gameSelector').value = config.game;
+        document.getElementById('sensitivitySlider').value = config.sensitivity;
+        document.getElementById('gameSensitivity').value = config.sensitivity;
+        document.getElementById('mouseDPI').value = config.dpi;
+        document.getElementById('fovSlider').value = config.fov;
+        document.getElementById('fovInput').value = config.fov;
+
+        // Mettre à jour les configurations par défaut
+        defaultSensitivityConfig.game = config.game;
+        defaultSensitivityConfig.sensitivity = config.sensitivity;
+        defaultSensitivityConfig.dpi = config.dpi;
+        defaultSensitivityConfig.fov = config.fov;
+
+        // Mettre à jour la calculatrice
+        globalSensCalc.updateValues(
+            config.sensitivity,
+            config.dpi,
+            config.fov,
+            config.game
+        );
+
+        // Mettre à jour l'affichage
+        updateDisplay();
+    }
+}
+
+// Déplacer updateDisplay en dehors de setupOptionsMenu, au niveau global
+function updateDisplay() {
+    const cm360 = globalSensCalc.calculateCM360();
+    const cm360Display = document.getElementById('cm360Value');
+    if (cm360Display) {
+        cm360Display.textContent = `${cm360.toFixed(3)} cm/360°`;
+    }
+
+    // Calculer la sensibilité précise pour Three.js
+    mouseSensitivity = globalSensCalc.calculateThreeJSSensitivity(cm360);
+
+    // Convertir le FOV selon le type (horizontal/vertical)
+    const verticalFov = globalSensCalc.convertFovToVertical(
+        globalSensCalc.fov,
+        camera.aspect
+    );
+
+    // Mettre à jour le FOV de la caméra
+    camera.fov = verticalFov;
+    camera.updateProjectionMatrix();
+
+    // Ajuster la position de la caméra en fonction du nouveau FOV
+    updateCameraPosition();
 }
 
 function setupPointerLock() {
@@ -1853,21 +1950,36 @@ function enableButton(buttonId) {
 }
 
 function init() {
-    setupPointerLock();
-    setupOptionsMenu();
-
-    setupEventListeners();
-    addProfileInterface();
-    addExtraEventListeners();
-    updateCrosshair();
-    if (!checkDeviceSupport()) return;
-
-    for (let i = 0; i < 3; i++) {
-        addNewSphere();
+    // Attendre que le DOM soit chargé
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAfterLoad);
+    } else {
+        initializeAfterLoad();
     }
+}
 
-    startTimer();
-    animate();
+function initializeAfterLoad() {
+    try {
+        setupPointerLock();
+        setupOptionsMenu();
+        loadSavedSettings();
+        setupEventListeners();
+        addProfileInterface();
+        addExtraEventListeners();
+        updateCrosshair();
+
+        if (!checkDeviceSupport()) return;
+
+        // Initialiser les sphères
+        for (let i = 0; i < 3; i++) {
+            addNewSphere();
+        }
+
+        startTimer();
+        animate();
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+    }
 }
 
 init();

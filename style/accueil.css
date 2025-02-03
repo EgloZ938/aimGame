@@ -250,7 +250,6 @@ body {
 .form-button {
   width: 100%;
   padding: 15px;
-  margin-top: 20px;
   font-size: 18px;
   border: none;
   cursor: pointer;
@@ -347,10 +346,21 @@ body::after {
 }
 
 /* Styles spécifiques pour le modal des options */
-.options-content {
+.modal-content.options-content {
   width: 600px;
   max-height: 80vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.options-content h2.modal-title {
+  padding: 30px;
+  margin: 0;
+  font-size: 32px;
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .options-section {
@@ -419,7 +429,9 @@ body::after {
 .modal-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
+  padding: 30px;
+  background: rgba(0, 0, 0, 0.2);
+  margin: 0;
 }
 
 .save-button {
@@ -432,7 +444,17 @@ body::after {
 
 /* Styles pour la section des profils */
 .profile-section {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 5px;
   margin-top: 20px;
+}
+
+.profile-section h3 {
+  color: white;
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .profile-controls {
@@ -441,25 +463,86 @@ body::after {
   gap: 15px;
 }
 
-.profile-select {
-  width: 100%;
+.profile-controls input[type="text"],
+.profile-controls select {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 18px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition: background 0.3s ease;
+}
+
+.profile-controls input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.profile-controls input[type="text"]:focus,
+.profile-controls select:focus {
+    outline: none;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+.profile-controls input[type="text"]:hover,
+.profile-controls select:hover {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+.profile-controls select option {
+  background-color: #1a1a3a;
   padding: 10px;
+  font-size: 16px;
 }
 
-.profile-buttons {
+.button-group {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  justify-content: space-between;
 }
 
-.profile-buttons .form-button {
+.profile-controls .menu-button {
   flex: 1;
-  margin: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  padding: 15px 30px;
+  font-size: 18px;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.profile-controls .menu-button:hover {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+#deleteProfile {
+  background: linear-gradient(90deg, rgba(255, 0, 0, 0.1) 0%, rgba(255, 0, 0, 0.05) 100%);
+}
+
+#deleteProfile:hover {
+  background: linear-gradient(90deg, rgba(255, 0, 0, 0.2) 0%, rgba(255, 0, 0, 0.1) 100%);
+}
+
+#setFavoriteProfile {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+}
+
+#setFavoriteProfile:hover {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%);
+}
+
+/* Style pour l'étoile du profil favori */
+.profile-select option[data-favorite="true"]::after {
+  content: " ★";
+  color: gold;
 }
 
 .options-scroll-area {
-  max-height: 70vh;
+  flex: 1;
   overflow-y: auto;
-  padding-right: 15px;
+  padding: 30px;
+  min-height: 0;
 }
 
 .options-scroll-area::-webkit-scrollbar {
